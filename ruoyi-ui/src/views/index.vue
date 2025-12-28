@@ -1,189 +1,169 @@
 <template>
   <div class="dashboard-container">
-    <!-- 欢迎区域 -->
-    <div class="welcome-section">
-      <div class="welcome-content">
-        <div class="welcome-text">
-          <h1 class="welcome-title">档案打包管理系统</h1>
-          <p class="welcome-subtitle">欢迎回来，{{ userName }}！</p>
-          <p class="welcome-time">{{ currentTime }}</p>
-        </div>
-        <div class="quick-actions">
-          <el-button type="primary" icon="el-icon-folder-opened" @click="goToArchive">查看档案</el-button>
-          <el-button type="success" icon="el-icon-box" @click="goToPackage">档案打包</el-button>
-        </div>
+    <!-- 顶部标题栏 -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <span class="header-icon">≋</span>
+        <h1 class="dashboard-title">学生资助数据中心</h1>
+        <span class="header-icon">⋰⋱⋰</span>
+      </div>
+      <div class="header-right">
+        <div class="header-time">{{ currentTime }}</div>
       </div>
     </div>
 
-    <!-- 数据统计卡片 -->
-    <div class="stats-section">
-      <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card" @click="goToArchive">
-            <div class="stat-icon archive-icon">
-              <i class="el-icon-document"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ statsData.totalArchives }}</div>
-              <div class="stat-label">档案总数</div>
-              <div class="stat-trend" :class="statsData.archiveTrend > 0 ? 'trend-up' : 'trend-down'">
-                <i :class="statsData.archiveTrend > 0 ? 'el-icon-top' : 'el-icon-bottom'"></i>
-                {{ Math.abs(statsData.archiveTrend) }}%
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card" @click="goToPackage">
-            <div class="stat-icon package-icon">
-              <i class="el-icon-box"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ statsData.totalPackages }}</div>
-              <div class="stat-label">打包文件</div>
-              <div class="stat-trend" :class="statsData.packageTrend > 0 ? 'trend-up' : 'trend-down'">
-                <i :class="statsData.packageTrend > 0 ? 'el-icon-top' : 'el-icon-bottom'"></i>
-                {{ Math.abs(statsData.packageTrend) }}%
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card">
-            <div class="stat-icon storage-icon">
-              <i class="el-icon-folder"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ statsData.storageUsed }}</div>
-              <div class="stat-label">存储使用</div>
-              <div class="stat-progress">
-                <el-progress :percentage="statsData.storagePercent" :show-text="false" :stroke-width="4"></el-progress>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card">
-            <div class="stat-icon report-icon">
-              <i class="el-icon-s-data"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ statsData.totalReports }}</div>
-              <div class="stat-label">报表类型</div>
-              <div class="stat-info">本学期活跃</div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
+    <!-- 顶部数据统计条 -->
+    <div class="top-stats">
+      <div class="stat-item" v-for="(item, index) in topStats" :key="index">
+        <div class="stat-label">{{ item.label }}</div>
+        <div class="stat-value">{{ item.value }}</div>
+      </div>
     </div>
 
-    <!-- 图表区域 -->
-    <el-row :gutter="20" class="chart-section">
-      <!-- 归档趋势图 -->
-      <el-col :xs="24" :lg="16">
-        <div class="chart-card">
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <!-- 左侧列 -->
+      <div class="left-column">
+        <!-- 困难类型分布 -->
+        <div class="data-card">
           <div class="card-header">
-            <h3 class="card-title">
-              <i class="el-icon-s-marketing"></i>
-              归档趋势统计
-            </h3>
-            <el-radio-group v-model="trendPeriod" size="small" @change="loadTrendData">
-              <el-radio-button label="week">近7天</el-radio-button>
-              <el-radio-button label="month">近30天</el-radio-button>
-              <el-radio-button label="year">本学年</el-radio-button>
-            </el-radio-group>
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">困难类型分布</h3>
           </div>
           <div class="card-body">
-            <div ref="trendChart" class="chart" style="height: 300px"></div>
+            <div ref="difficultyTypeChart" class="chart" style="height: 220px"></div>
           </div>
         </div>
-      </el-col>
 
-      <!-- 档案类型分布 -->
-      <el-col :xs="24" :lg="8">
-        <div class="chart-card">
+        <!-- 各学段受助人数 -->
+        <div class="data-card">
           <div class="card-header">
-            <h3 class="card-title">
-              <i class="el-icon-pie-chart"></i>
-              档案类型分布
-            </h3>
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">各学段受助人数</h3>
           </div>
           <div class="card-body">
-            <div ref="typeChart" class="chart" style="height: 300px"></div>
+            <div ref="schoolLevelChart" class="chart" style="height: 220px"></div>
           </div>
         </div>
-      </el-col>
-    </el-row>
 
-    <!-- 底部区域 -->
-    <el-row :gutter="20" class="bottom-section">
-      <!-- 最近操作 -->
-      <el-col :xs="24" :lg="12">
-        <div class="list-card">
+        <!-- 指标执行情况 -->
+        <div class="data-card">
           <div class="card-header">
-            <h3 class="card-title">
-              <i class="el-icon-time"></i>
-              最近操作
-            </h3>
-            <el-link type="primary" :underline="false" @click="goToArchive">查看全部</el-link>
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">指标执行情况</h3>
           </div>
           <div class="card-body">
-            <el-timeline>
-              <el-timeline-item
-                v-for="(activity, index) in recentActivities"
-                :key="index"
-                :timestamp="activity.timestamp"
-                :color="activity.color"
-              >
-                <div class="activity-item">
-                  <i :class="activity.icon"></i>
-                  {{ activity.content }}
+            <div class="quota-list">
+              <div v-for="(item, index) in quotaData" :key="index" class="quota-item">
+                <div class="quota-name">{{ item.name }}</div>
+                <div class="quota-detail">
+                  <div class="quota-bar">
+                    <div class="quota-bar-fill" :style="{ width: item.percent + '%' }"></div>
+                  </div>
+                  <div class="quota-text">
+                    <span class="quota-used">{{ item.used }}</span> / <span class="quota-total">{{ item.total }}</span>
+                  </div>
                 </div>
-              </el-timeline-item>
-            </el-timeline>
-            <div v-if="recentActivities.length === 0" class="empty-state">
-              <i class="el-icon-document"></i>
-              <p>暂无操作记录</p>
-            </div>
-          </div>
-        </div>
-      </el-col>
-
-      <!-- 待办事项 -->
-      <el-col :xs="24" :lg="12">
-        <div class="list-card">
-          <div class="card-header">
-            <h3 class="card-title">
-              <i class="el-icon-bell"></i>
-              待办提醒
-            </h3>
-          </div>
-          <div class="card-body">
-            <div class="todo-list">
-              <div
-                v-for="(todo, index) in todoList"
-                :key="index"
-                class="todo-item"
-                :class="'todo-' + todo.type"
-              >
-                <div class="todo-icon">
-                  <i :class="todo.icon"></i>
-                </div>
-                <div class="todo-content">
-                  <div class="todo-title">{{ todo.title }}</div>
-                  <div class="todo-desc">{{ todo.desc }}</div>
-                </div>
-                <el-button type="text" size="small" @click="handleTodo(todo)">处理</el-button>
               </div>
             </div>
-            <div v-if="todoList.length === 0" class="empty-state">
-              <i class="el-icon-success"></i>
-              <p>暂无待办事项</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间列 -->
+      <div class="center-column">
+        <!-- 崇左市地图 -->
+        <div class="data-card map-card">
+          <div class="card-header">
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">广西崇左市区域分布</h3>
+          </div>
+          <div class="card-body">
+            <div ref="mapChart" class="chart" style="height: 300px"></div>
+          </div>
+        </div>
+
+        <!-- 月度受助趋势 -->
+        <div class="data-card">
+          <div class="card-header">
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">本学期受助人数趋势</h3>
+          </div>
+          <div class="card-body">
+            <div ref="trendChart" class="chart" style="height: 180px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧列 -->
+      <div class="right-column">
+        <!-- 学段受助金额统计 -->
+        <div class="data-card">
+          <div class="card-header">
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">学段受助金额统计</h3>
+          </div>
+          <div class="card-body">
+            <div class="amount-table">
+              <div class="table-header">
+                <div class="table-cell">学段</div>
+                <div class="table-cell">受助人数</div>
+                <div class="table-cell">受助金额</div>
+              </div>
+              <div class="table-row" v-for="(item, index) in amountData" :key="index">
+                <div class="table-cell">{{ item.label }}</div>
+                <div class="table-cell">{{ item.count }}</div>
+                <div class="table-cell amount">{{ item.amount }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </el-col>
-    </el-row>
+
+        <!-- 资助项目列表 -->
+        <div class="data-card">
+          <div class="card-header">
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">资助项目列表</h3>
+          </div>
+          <div class="card-body">
+            <div class="project-table">
+              <div class="table-header">
+                <div class="table-cell">状态</div>
+                <div class="table-cell">项目类型</div>
+                <div class="table-cell">时间</div>
+              </div>
+              <div class="table-row" v-for="(item, index) in projectData" :key="index">
+                <div class="table-cell">
+                  <span class="status-badge" :class="item.status">{{ item.statusText }}</span>
+                </div>
+                <div class="table-cell">{{ item.type }}</div>
+                <div class="table-cell time">{{ item.time }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 公告栏 -->
+        <div class="data-card">
+          <div class="card-header">
+            <span class="card-icon">▣</span>
+            <h3 class="card-title">用户注册统计</h3>
+          </div>
+          <div class="card-body">
+            <div class="notice-table">
+              <div class="table-header">
+                <div class="table-cell">用户名</div>
+                <div class="table-cell">注册时间</div>
+              </div>
+              <div class="table-row" v-for="(item, index) in noticeList.slice(0, 3)" :key="index">
+                <div class="table-cell">{{ item.userName }}</div>
+                <div class="table-cell time">{{ item.time }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -194,258 +174,251 @@ export default {
   name: "Index",
   data() {
     return {
-      userName: this.$store.state.user.name || '用户',
       currentTime: '',
-      trendPeriod: 'week',
+      topStats: [
+        { label: '在校学生', value: '3256' },
+        { label: '困难学生', value: '856' },
+        { label: '受助人次', value: '1520' },
+        { label: '资助档案', value: '1520' },
+        { label: '资助项目', value: '12' }
+      ],
       statsData: {
-        totalArchives: 0,
-        totalPackages: 0,
-        storageUsed: '0 GB',
-        storagePercent: 0,
-        totalReports: 0,
-        archiveTrend: 0,
-        packageTrend: 0
+        totalStudents: 3256,
+        difficultyStudents: 856,
+        totalBudget: 185.6,
+        usedBudget: 142.3
       },
-      recentActivities: [],
-      todoList: [],
+      quotaData: [
+        { name: '助学金', used: 520, total: 600, percent: 87 },
+        { name: '免学杂费', used: 230, total: 300, percent: 77 },
+        { name: '营养改善', used: 180, total: 200, percent: 90 }
+      ],
+      amountData: [
+        { label: '高中', amount: '86.5万元', count: 356 },
+        { label: '初中', amount: '42.8万元', count: 285 },
+        { label: '小学', amount: '13.0万元', count: 215 }
+      ],
+      projectData: [
+        { status: 'pending', statusText: '已处理', type: '助学金', time: '2023-12-18 14:30' },
+        { status: 'success', statusText: 'YG', type: '免学杂费', time: '2023-12-15 10:20' },
+        { status: 'success', statusText: 'YG', type: '营养改善', time: '2023-12-10 16:45' }
+      ],
+      noticeList: [
+        { userName: 'app注册统计', time: '2023-03' },
+        { userName: 'app注册统计', time: '2023-04' },
+        { userName: 'app注册统计', time: '2023-05' }
+      ],
+      difficultyTypeChart: null,
+      schoolLevelChart: null,
       trendChart: null,
-      typeChart: null
+      mapChart: null
     }
   },
   mounted() {
     this.updateTime()
-    this.loadDashboardData()
     this.initCharts()
-    // 每分钟更新时间
-    this.timeInterval = setInterval(this.updateTime, 60000)
+    this.timeInterval = setInterval(this.updateTime, 1000)
   },
   beforeDestroy() {
     if (this.timeInterval) {
       clearInterval(this.timeInterval)
     }
-    if (this.trendChart) {
-      this.trendChart.dispose()
-    }
-    if (this.typeChart) {
-      this.typeChart.dispose()
-    }
+    if (this.difficultyTypeChart) this.difficultyTypeChart.dispose()
+    if (this.schoolLevelChart) this.schoolLevelChart.dispose()
+    if (this.trendChart) this.trendChart.dispose()
+    if (this.mapChart) this.mapChart.dispose()
   },
   methods: {
     updateTime() {
       const now = new Date()
-      const hours = now.getHours()
-      let greeting = '早上好'
-      if (hours >= 12 && hours < 18) {
-        greeting = '下午好'
-      } else if (hours >= 18) {
-        greeting = '晚上好'
-      }
-      this.currentTime = `${greeting}，${now.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
-    },
-    
-    async loadDashboardData() {
-      try {
-        // TODO: 调用后端接口获取统计数据
-        // 模拟数据
-        this.statsData = {
-          totalArchives: 1248,
-          totalPackages: 156,
-          storageUsed: '23.6 GB',
-          storagePercent: 47,
-          totalReports: 28,
-          archiveTrend: 12.5,
-          packageTrend: 8.3
-        }
-        
-        this.recentActivities = [
-          { timestamp: '2024-12-27 14:30', content: '生成了"高中助学金发放汇总表"档案', icon: 'el-icon-document', color: '#409EFF' },
-          { timestamp: '2024-12-27 11:20', content: '打包了"2024学年第一学期"档案包', icon: 'el-icon-box', color: '#67C23A' },
-          { timestamp: '2024-12-26 16:45', content: '删除了过期档案文件', icon: 'el-icon-delete', color: '#F56C6C' },
-          { timestamp: '2024-12-26 10:15', content: '创建了自定义档案包"资助档案"', icon: 'el-icon-folder-add', color: '#E6A23C' }
-        ]
-        
-        this.todoList = [
-          { type: 'warning', icon: 'el-icon-warning', title: '档案待审核', desc: '有3个档案包等待审核', action: 'review' },
-          { type: 'info', icon: 'el-icon-info', title: '存储空间提醒', desc: '存储空间使用已达47%，建议清理', action: 'clean' }
-        ]
-      } catch (error) {
-        console.error('加载控制台数据失败:', error)
-      }
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hours = String(now.getHours()).padStart(2, '0')
+      const minutes = String(now.getMinutes()).padStart(2, '0')
+      const seconds = String(now.getSeconds()).padStart(2, '0')
+      this.currentTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     },
     
     initCharts() {
       this.$nextTick(() => {
+        this.initDifficultyTypeChart()
+        this.initSchoolLevelChart()
+        this.initMapChart()
         this.initTrendChart()
-        this.initTypeChart()
       })
     },
     
-    initTrendChart() {
-      if (!this.$refs.trendChart) return
+    initDifficultyTypeChart() {
+      if (!this.$refs.difficultyTypeChart) return
+      this.difficultyTypeChart = echarts.init(this.$refs.difficultyTypeChart)
       
-      this.trendChart = echarts.init(this.$refs.trendChart)
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}: {c}人 ({d}%)'
+        },
+        legend: {
+          orient: 'vertical',
+          right: '5%',
+          top: 'center',
+          textStyle: { color: '#333', fontSize: 12 }
+        },
+        color: ['#52C41A', '#13C2C2', '#1890FF', '#FA8C16', '#F5222D'],
+        series: [
+          {
+            type: 'pie',
+            radius: ['45%', '70%'],
+            center: ['35%', '50%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 4,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            label: { show: false },
+            data: [
+              { value: 256, name: '脱贫户' },
+              { value: 186, name: '监测户' },
+              { value: 142, name: '低保户' },
+              { value: 178, name: '残疾学生' },
+              { value: 94, name: '其他' }
+            ]
+          }
+        ]
+      }
+      
+      this.difficultyTypeChart.setOption(option)
+      window.addEventListener('resize', () => this.difficultyTypeChart && this.difficultyTypeChart.resize())
+    },
+    
+    initSchoolLevelChart() {
+      if (!this.$refs.schoolLevelChart) return
+      this.schoolLevelChart = echarts.init(this.$refs.schoolLevelChart)
       
       const option = {
         tooltip: {
           trigger: 'axis',
-          axisPointer: {
-            type: 'shadow'
-          }
-        },
-        legend: {
-          data: ['归档数量', '打包数量'],
-          bottom: 0
+          axisPointer: { type: 'shadow' }
         },
         grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '12%',
-          top: '3%',
+          left: '8%',
+          right: '8%',
+          bottom: '15%',
+          top: '10%',
           containLabel: true
         },
         xAxis: {
           type: 'category',
-          data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-          axisLine: {
-            lineStyle: {
-              color: '#e0e6ed'
-            }
-          },
-          axisLabel: {
-            color: '#666'
-          }
+          data: ['小学', '初中', '高中'],
+          axisLine: { lineStyle: { color: '#E0E6ED' } },
+          axisLabel: { color: '#666', fontSize: 12 }
         },
         yAxis: {
           type: 'value',
-          axisLine: {
-            show: false
-          },
-          axisTick: {
-            show: false
-          },
-          axisLabel: {
-            color: '#666'
-          },
-          splitLine: {
-            lineStyle: {
-              color: '#f0f2f5',
-              type: 'dashed'
-            }
-          }
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#666' },
+          splitLine: { lineStyle: { color: '#F0F2F5', type: 'dashed' } }
         },
         series: [
           {
-            name: '归档数量',
             type: 'bar',
-            data: [120, 132, 101, 134, 90, 230, 210],
-            itemStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: '#409EFF' },
-                { offset: 1, color: '#6CB5FF' }
-              ])
-            },
-            barWidth: '30%'
+            data: [215, 285, 356],
+            itemStyle: { color: '#52C41A', borderRadius: [4, 4, 0, 0] },
+            barWidth: '40%',
+            label: {
+              show: true,
+              position: 'top',
+              formatter: '{c}人',
+              color: '#52C41A',
+              fontSize: 12,
+              fontWeight: 600
+            }
+          }
+        ]
+      }
+      
+      this.schoolLevelChart.setOption(option)
+      window.addEventListener('resize', () => this.schoolLevelChart && this.schoolLevelChart.resize())
+    },
+    
+    initTrendChart() {
+      if (!this.$refs.trendChart) return
+      this.trendChart = echarts.init(this.$refs.trendChart)
+      
+      const option = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        legend: {
+          data: ['新增用户', '累计受助总人次'],
+          bottom: '5%',
+          textStyle: { color: '#666' }
+        },
+        grid: {
+          left: '5%',
+          right: '5%',
+          bottom: '12%',
+          top: '8%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: ['1日', '5日', '10日', '15日', '18日', '19日', '20日', '21日', '22日', '23日', '24日'],
+          axisLine: { lineStyle: { color: '#E0E6ED' } },
+          axisLabel: { color: '#666' }
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#666' },
+          splitLine: { lineStyle: { color: '#F0F2F5', type: 'dashed' } }
+        },
+        series: [
+          {
+            name: '新增用户',
+            type: 'line',
+            data: [80, 85, 78, 75, 72, 70, 68, 65, 62, 60, 58],
+            smooth: true,
+            itemStyle: { color: '#FA8C16' },
+            lineStyle: { width: 2 },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(250, 140, 22, 0.3)' },
+                  { offset: 1, color: 'rgba(250, 140, 22, 0.05)' }
+                ]
+              }
+            }
           },
           {
-            name: '打包数量',
+            name: '累计受助总人次',
             type: 'line',
-            data: [15, 18, 12, 20, 11, 28, 25],
+            data: [85, 88, 82, 80, 78, 75, 73, 70, 68, 65, 63],
             smooth: true,
-            itemStyle: {
-              color: '#67C23A'
-            },
-            lineStyle: {
-              width: 3
-            },
+            itemStyle: { color: '#52C41A' },
+            lineStyle: { width: 2 },
             areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
-                { offset: 1, color: 'rgba(103, 194, 58, 0.1)' }
-              ])
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
+                  { offset: 1, color: 'rgba(82, 196, 26, 0.05)' }
+                ]
+              }
             }
           }
         ]
       }
       
       this.trendChart.setOption(option)
-      window.addEventListener('resize', () => {
-        this.trendChart && this.trendChart.resize()
-      })
-    },
-    
-    initTypeChart() {
-      if (!this.$refs.typeChart) return
-      
-      this.typeChart = echarts.init(this.$refs.typeChart)
-      
-      const option = {
-        tooltip: {
-          trigger: 'item',
-          formatter: '{b}: {c} ({d}%)'
-        },
-        legend: {
-          orient: 'vertical',
-          right: '5%',
-          top: 'center',
-          icon: 'circle'
-        },
-        series: [
-          {
-            type: 'pie',
-            radius: ['40%', '70%'],
-            center: ['35%', '50%'],
-            avoidLabelOverlap: false,
-            itemStyle: {
-              borderRadius: 10,
-              borderColor: '#fff',
-              borderWidth: 2
-            },
-            label: {
-              show: false
-            },
-            emphasis: {
-              label: {
-                show: true,
-                fontSize: 16,
-                fontWeight: 'bold'
-              },
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: 'rgba(0, 0, 0, 0.5)'
-              }
-            },
-            data: [
-              { value: 548, name: '报表档案', itemStyle: { color: '#409EFF' } },
-              { value: 335, name: '自定义档案', itemStyle: { color: '#67C23A' } },
-              { value: 234, name: '混合档案', itemStyle: { color: '#E6A23C' } },
-              { value: 131, name: '其他', itemStyle: { color: '#909399' } }
-            ]
-          }
-        ]
-      }
-      
-      this.typeChart.setOption(option)
-      window.addEventListener('resize', () => {
-        this.typeChart && this.typeChart.resize()
-      })
-    },
-    
-    loadTrendData() {
-      // TODO: 根据时间范围重新加载趋势数据
-      console.log('切换时间范围:', this.trendPeriod)
-    },
-    
-    goToArchive() {
-      this.$router.push('/system/report/reportArchive')
-    },
-    
-    goToPackage() {
-      this.$router.push('/system/report/reportArchive')
-    },
-    
-    handleTodo(todo) {
-      this.$message.info('功能开发中...')
+      window.addEventListener('resize', () => this.trendChart && this.trendChart.resize())
     }
   }
 }
@@ -453,306 +426,280 @@ export default {
 
 <style scoped lang="scss">
 .dashboard-container {
-  padding: 20px;
-  background: #f0f2f5;
-  min-height: calc(100vh - 84px);
+  padding: 0;
+  background: #E8F5E9;
+  min-height: 100vh;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
 
-  // 欢迎区域
-  .welcome-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
-    padding: 40px;
-    margin-bottom: 20px;
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  // 顶部标题栏
+  .dashboard-header {
+    background: linear-gradient(to right, #43A047, #66BB6A);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #2E7D32;
 
-    .welcome-content {
+    .header-left {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 12px;
 
-      .welcome-text {
-        .welcome-title {
-          font-size: 32px;
-          font-weight: 600;
-          margin: 0 0 10px 0;
-        }
-
-        .welcome-subtitle {
-          font-size: 18px;
-          opacity: 0.9;
-          margin: 0 0 5px 0;
-        }
-
-        .welcome-time {
-          font-size: 14px;
-          opacity: 0.8;
-          margin: 0;
-        }
+      .header-icon {
+        color: #FFFFFF;
+        font-size: 24px;
+        font-weight: bold;
       }
 
-      .quick-actions {
-        display: flex;
-        gap: 12px;
+      .dashboard-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 600;
+        color: #FFFFFF;
+        letter-spacing: 2px;
+      }
+    }
 
-        .el-button {
-          background: rgba(255, 255, 255, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          color: #fff;
-          padding: 12px 24px;
-          font-size: 14px;
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-          }
-        }
+    .header-right {
+      .header-time {
+        font-size: 14px;
+        color: #FFFFFF;
+        font-family: 'Courier New', monospace;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 16px;
+        border-radius: 4px;
       }
     }
   }
 
-  // 统计卡片
-  .stats-section {
-    margin-bottom: 20px;
+  // 顶部数据统计条
+  .top-stats {
+    background: #FFFFFF;
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-bottom: 2px solid #C8E6C9;
 
-    .stat-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    .stat-item {
+      text-align: center;
+      padding: 0 20px;
+      border-right: 1px solid #E0E0E0;
 
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      &:last-child {
+        border-right: none;
       }
 
-      .stat-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 20px;
-        font-size: 28px;
-        color: #fff;
-
-        &.archive-icon {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        &.package-icon {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        &.storage-icon {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        &.report-icon {
-          background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        }
+      .stat-label {
+        font-size: 14px;
+        color: #757575;
+        margin-bottom: 8px;
       }
 
-      .stat-content {
-        flex: 1;
-
-        .stat-value {
-          font-size: 28px;
-          font-weight: 600;
-          color: #303133;
-          margin-bottom: 5px;
-        }
-
-        .stat-label {
-          font-size: 14px;
-          color: #909399;
-          margin-bottom: 8px;
-        }
-
-        .stat-trend {
-          font-size: 12px;
-          font-weight: 500;
-
-          &.trend-up {
-            color: #67c23a;
-          }
-
-          &.trend-down {
-            color: #f56c6c;
-          }
-        }
-
-        .stat-progress {
-          margin-top: 8px;
-        }
-
-        .stat-info {
-          font-size: 12px;
-          color: #909399;
-        }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 600;
+        color: #2E7D32;
+        font-family: Arial, sans-serif;
       }
     }
   }
 
-  // 图表区域
-  .chart-section {
-    margin-bottom: 20px;
+  // 主要内容区域
+  .main-content {
+    display: grid;
+    grid-template-columns: 26% 48% 26%;
+    gap: 16px;
+    padding: 16px;
+    height: calc(100vh - 200px);
+
+    .left-column,
+    .center-column,
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
   }
 
-  .chart-card,
-  .list-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  // 数据卡片
+  .data-card {
+    background: #FFFFFF;
+    border-radius: 4px;
     overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+
+    &.large-card {
+      flex: 1;
+    }
 
     .card-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid #f0f2f5;
+      background: linear-gradient(to right, #66BB6A, #81C784);
+      padding: 12px 16px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 8px;
+
+      .card-icon {
+        color: #FFFFFF;
+        font-size: 16px;
+      }
 
       .card-title {
         margin: 0;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
-        color: #303133;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        i {
-          color: #409eff;
-        }
+        color: #FFFFFF;
       }
     }
 
     .card-body {
-      padding: 24px;
-    }
-  }
-
-  // 最近操作
-  .activity-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #606266;
-
-    i {
-      font-size: 16px;
-    }
-  }
-
-  // 待办事项
-  .todo-list {
-    .todo-item {
-      display: flex;
-      align-items: center;
       padding: 16px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      background: #f5f7fa;
-      transition: all 0.3s;
+      flex: 1;
+      overflow: auto;
+    }
+  }
 
-      &:hover {
-        background: #ecf5ff;
-      }
+  // 指标列表
+  .quota-list {
+    .quota-item {
+      margin-bottom: 20px;
 
       &:last-child {
         margin-bottom: 0;
       }
 
-      .todo-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+      .quota-name {
+        font-size: 14px;
+        color: #424242;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .quota-detail {
         display: flex;
         align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-        font-size: 18px;
-      }
+        gap: 12px;
 
-      &.todo-warning .todo-icon {
-        background: #fef0f0;
-        color: #f56c6c;
-      }
+        .quota-bar {
+          flex: 1;
+          height: 10px;
+          background: #E0E0E0;
+          border-radius: 5px;
+          overflow: hidden;
 
-      &.todo-info .todo-icon {
-        background: #f4f4f5;
-        color: #909399;
-      }
-
-      .todo-content {
-        flex: 1;
-
-        .todo-title {
-          font-size: 14px;
-          color: #303133;
-          font-weight: 500;
-          margin-bottom: 4px;
+          .quota-bar-fill {
+            height: 100%;
+            background: #66BB6A;
+            transition: width 0.3s;
+            border-radius: 5px;
+          }
         }
 
-        .todo-desc {
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-    }
-  }
+        .quota-text {
+          font-size: 13px;
+          color: #757575;
+          white-space: nowrap;
+          min-width: 70px;
+          text-align: right;
 
-  // 空状态
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #909399;
+          .quota-used {
+            color: #2E7D32;
+            font-weight: 600;
+          }
 
-    i {
-      font-size: 48px;
-      margin-bottom: 12px;
-      opacity: 0.5;
-    }
-
-    p {
-      margin: 0;
-      font-size: 14px;
-    }
-  }
-
-  // 响应式
-  @media (max-width: 768px) {
-    .welcome-section {
-      padding: 24px;
-
-      .welcome-content {
-        flex-direction: column;
-        gap: 20px;
-
-        .welcome-text .welcome-title {
-          font-size: 24px;
-        }
-
-        .quick-actions {
-          width: 100%;
-
-          .el-button {
-            flex: 1;
+          .quota-total {
+            color: #757575;
           }
         }
       }
     }
+  }
 
-    .stat-card {
-      margin-bottom: 12px;
+  // 表格样式
+  .amount-table,
+  .project-table,
+  .notice-table {
+    .table-header {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #F1F8E9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+
+      .table-cell {
+        font-size: 13px;
+        color: #424242;
+        font-weight: 600;
+        text-align: center;
+      }
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 12px 10px;
+      border-bottom: 1px solid #F5F5F5;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #F9FBE7;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .table-cell {
+        font-size: 13px;
+        color: #616161;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.amount {
+          color: #F57C00;
+          font-weight: 600;
+        }
+
+        &.time {
+          color: #9E9E9E;
+          font-size: 12px;
+        }
+
+        .status-badge {
+          padding: 2px 8px;
+          border-radius: 2px;
+          font-size: 12px;
+          font-weight: 500;
+
+          &.pending {
+            background: #FFF3E0;
+            color: #E65100;
+          }
+
+          &.success {
+            background: #E8F5E9;
+            color: #2E7D32;
+          }
+        }
+      }
+    }
+  }
+
+  // 响应式
+  @media (max-width: 1400px) {
+    .main-content {
+      grid-template-columns: 1fr;
+      height: auto;
+
+      .center-column {
+        order: -1;
+      }
     }
   }
 }
