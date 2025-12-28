@@ -9,9 +9,9 @@
       class="right-menu"
       :class="{'collapse': !sidebar.opened}"
       :style="{
-        width: sidebar.opened ? '280px' : '64px',
-        minWidth: sidebar.opened ? '280px' : '64px',
-        maxWidth: sidebar.opened ? '280px' : '64px'
+        width: '100px',
+        minWidth: '100px',
+        maxWidth: '100px'
       }">
 <!--      <template v-if="device!=='mobile'">-->
 <!--        <search id="header-search" class="right-menu-item" />-->
@@ -123,7 +123,7 @@ export default {
       this.$nextTick(() => {
         const rightMenu = this.$el.querySelector('.right-menu')
         if (rightMenu) {
-          const width = this.sidebar.opened ? '280px' : '64px'
+          const width = '100px'
           rightMenu.style.setProperty('width', width, 'important')
           rightMenu.style.setProperty('min-width', width, 'important')
           rightMenu.style.setProperty('max-width', width, 'important')
@@ -158,8 +158,13 @@ export default {
   overflow: visible;
   position: relative;
   width: 100%;
-  background: #635fd6;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  background: linear-gradient(to bottom, rgba(165, 214, 167, 0.9), rgba(200, 230, 201, 0.85)); // 增强绿色渐变
+  backdrop-filter: blur(20px) saturate(180%); // 毛玻璃效果
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 
+    0 2px 8px rgba(102, 187, 106, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  border-bottom: 2px solid rgba(102, 187, 106, 0.4); // 加深绿色边框
   display: flex;
   align-items: center;
 
@@ -174,6 +179,12 @@ export default {
     box-sizing: border-box;
     display: flex;
     align-items: center;
+
+    // 设置折叠图标颜色为黑色
+    ::v-deep svg {
+      fill: #333333 !important;
+      color: #333333 !important;
+    }
 
     &:hover {
       background: rgba(0, 0, 0, .025)
@@ -213,25 +224,30 @@ export default {
     right: 0 !important;
     top: 0 !important;
     height: 80px !important;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    background-color: #635fd6 !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    background: linear-gradient(to bottom, rgba(165, 214, 167, 0.95), rgba(200, 230, 201, 0.9)) !important; // 增强绿色渐变
+    backdrop-filter: blur(15px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
     transition: width 0.28s, min-width 0.28s, max-width 0.28s;
     z-index: 10 !important;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     padding-right: 8px;
+    box-shadow: 
+      -2px 0 8px rgba(102, 187, 106, 0.12),
+      inset 0 1px 1px rgba(255, 255, 255, 0.6);
 
     &:focus {
       outline: none;
     }
 
     &.collapse {
-      width: 64px !important;
-      min-width: 64px !important;
-      max-width: 64px !important;
+      width: 100px !important;
+      min-width: 100px !important;
+      max-width: 100px !important;
     }
 
     .avatar-container-wrapper {
@@ -328,9 +344,10 @@ export default {
           bottom: 0;
           left: 2px;
           font-size: 14px;
-          font-weight: bold;
+          font-weight: 700; // 加粗
           vertical-align: middle;
-          color: #ffffff;
+          color: #2E7D32; // 深绿色
+          text-shadow: 0 1px 2px rgba(46, 125, 50, 0.1);
         }
 
         .el-icon-caret-bottom {
@@ -365,24 +382,26 @@ export default {
   height: 100% !important;
 }
 
-// 确保right-menu占据navbar右侧整个宽度区域，与左侧logo区域对称
+// 确保right-menu占据navbar右侧整个宽度区域,与左侧logo区域对称
 .navbar {
   .right-menu {
     position: absolute !important;
     right: 0 !important;
     top: 0 !important;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    background-color: #635fd6 !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    background: linear-gradient(to bottom, rgba(165, 214, 167, 0.95), rgba(200, 230, 201, 0.9)) !important; // 增强绿色渐变
+    backdrop-filter: blur(15px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
     box-sizing: border-box !important;
     height: 80px !important;
     z-index: 1 !important;
 
     &.collapse {
-      width: 64px !important;
-      min-width: 64px !important;
-      max-width: 64px !important;
+      width: 100px !important;
+      min-width: 100px !important;
+      max-width: 100px !important;
     }
   }
 }

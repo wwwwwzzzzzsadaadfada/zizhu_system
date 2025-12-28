@@ -47,7 +47,7 @@ export default {
       }
       // 判断是否为首页
       if (!this.isDashboard(matched[0])) {
-        matched = [{ path: "/index", meta: { title: "首页" } }].concat(matched)
+        matched = [{ path: "/index", meta: { title: "控制舱" } }].concat(matched)
       }
       this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
     },
@@ -95,19 +95,25 @@ export default {
   font-size: 14px;
   line-height: 50px;
   margin-left: -10;
-  color: #ffffff;
+  color: #333333; // 黑色文字
 
   .no-redirect {
-    color: #bfcbd9;
+    color: #666666; // 深灰色
     cursor: text;
   }
 
   a {
-    color: #ffffff;
+    color: #333333; // 黑色链接
+    font-weight: 500;
 
     &:hover {
-      color: #409EFF;
+      color: #66BB6A; // 悬停时绿色
     }
+  }
+
+  // 面包屑分隔符颜色
+  ::v-deep .el-breadcrumb__separator {
+    color: #999999;
   }
 }
 </style>

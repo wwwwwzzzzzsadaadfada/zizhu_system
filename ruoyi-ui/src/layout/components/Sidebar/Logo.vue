@@ -57,10 +57,15 @@ export default {
   position: relative;
   width: 100%;
   height: 80px;
-  background: #635fd6;
+  background: linear-gradient(to bottom, rgba(165, 214, 167, 0.9), rgba(200, 230, 201, 0.85)); // 增强绿色渐变
+  backdrop-filter: blur(20px) saturate(180%); // 毛玻璃效果
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   text-align: center;
   overflow: visible !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 2px solid rgba(102, 187, 106, 0.4); // 加深绿色边框
+  box-shadow: 
+    0 4px 16px rgba(102, 187, 106, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,16 +102,17 @@ export default {
       display: block;
       margin: 0;
       padding: 0;
-      font-weight: 600;
+      font-weight: 700; // 加粗
       line-height: 1.3;
       font-size: 16px;
       font-family: 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
-      color: #ffffff;
+      color: #2E7D32; // 深绿色
       white-space: nowrap;
       width: 100%;
       text-align: center;
       overflow: visible;
       text-overflow: clip;
+      text-shadow: 0 1px 2px rgba(46, 125, 50, 0.1); // 文字阴影
     }
   }
 
