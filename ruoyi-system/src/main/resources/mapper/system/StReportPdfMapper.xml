@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportPdfMapper">
+    
+    <resultMap type="StReportPdf" id="StReportPdfResult">
+        <result property="id" column="id" />
+        <result property="studentId" column="student_id" />
+        <result property="reportId" column="report_id" />
+        <result property="reportName" column="report_name" />
+        <result property="fileName" column="file_name" />
+        <result property="filePath" column="file_path" />
+        <result property="fileSize" column="file_size" />
+        <result property="yearSemesterId" column="year_semester_id" />
+        <result property="schoolingPlanId" column="schooling_plan_id" />
+        <result property="gradeId" column="grade_id" />
+        <result property="classId" column="class_id" />
+        <result property="batchId" column="batch_id" />
+        <result property="isMerged" column="is_merged" />
+        <result property="mergedFromIds" column="merged_from_ids" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+        <result property="studentName" column="student_name" />
+        <result property="studentNo" column="student_no" />
+        <result property="gradeName" column="grade_name" />
+        <result property="className" column="class_name" />
+    </resultMap>
+
+    <sql id="selectStReportPdfVo">
+        select rp.id,
+               rp.student_id,
+               rp.report_id,
+               rp.report_name,
+               rp.file_name,
+               rp.file_path,
+               rp.file_size,
+               rp.year_semester_id,
+               rp.schooling_plan_id,
+               rp.grade_id,
+               rp.class_id,
+               rp.batch_id,
+               rp.is_merged,
+               rp.merged_from_ids,
+               rp.status,
+               rp.create_by,
+               rp.create_time,
+               rp.update_time,
+               coalesce(rp.student_name, sb.name)       as student_name,
+               coalesce(rp.student_no, sb.student_no)   as student_no,
+               rp.grade_name                            as grade_name,
+               rp.class_name                            as class_name
+        from st_report_pdf rp
+        left join st_students_base sb on rp.student_id = sb.id
+    </sql>
+
+    <select id="selectStReportPdfList" parameterType="StReportPdf" resultMap="StReportPdfResult">
+        <include refid="selectStReportPdfVo"/>
+        <where>  
+            <if test="studentId != null">and rp.student_id = #{studentId}</if>
+            <if test="studentName != null and studentName != ''">
+                and (
+                  rp.student_name like concat('%', #{studentName}, '%')
+                  or sb.name like concat('%', #{studentName}, '%')
+                )
+            </if>
+            <if test="reportId != null and reportId != ''">and rp.report_id = #{reportId}</if>
+            <if test="reportName != null and reportName != ''">and rp.report_name like concat('%', #{reportName}, '%')</if>
+            <if test="yearSemesterId != null">and rp.year_semester_id = #{yearSemesterId}</if>
+            <if test="schoolingPlanId != null">and rp.schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null">and rp.grade_id = #{gradeId}</if>
+            <if test="classId != null">and rp.class_id = #{classId}</if>
+            <if test="batchId != null and batchId != ''">and rp.batch_id = #{batchId}</if>
+            <if test="isMerged != null">and rp.is_merged = #{isMerged}</if>
+            <if test="status != null">and rp.status = #{status}</if>
+            <if test="params != null and params.beginCreateTime != null and params.beginCreateTime != ''">
+                and date(rp.create_time) &gt;= #{params.beginCreateTime}
+            </if>
+            <if test="params != null and params.endCreateTime != null and params.endCreateTime != ''">
+                and date(rp.create_time) &lt;= #{params.endCreateTime}
+            </if>
+        </where>
+        order by rp.create_time desc
+    </select>
+    
+    <select id="selectStReportPdfById" parameterType="Long" resultMap="StReportPdfResult">
+        <include refid="selectStReportPdfVo"/>
+        where rp.id = #{id}
+    </select>
+
+    <select id="selectStReportPdfListByBatchId" parameterType="String" resultMap="StReportPdfResult">
+        <include refid="selectStReportPdfVo"/>
+        where rp.batch_id = #{batchId} and rp.status = 1
+        order by rp.create_time asc
+    </select>
+        
+    <insert id="insertStReportPdf" parameterType="StReportPdf" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_pdf
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">student_id,</if>
+            <if test="reportId != null and reportId != ''">report_id,</if>
+            <if test="reportName != null and reportName != ''">report_name,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="filePath != null and filePath != ''">file_path,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="batchId != null">batch_id,</if>
+            <if test="isMerged != null">is_merged,</if>
+            <if test="mergedFromIds != null">merged_from_ids,</if>
+            <if test="status != null">status,</if>
+            <if test="studentName != null and studentName != ''">student_name,</if>
+            <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="gradeName != null and gradeName != ''">grade_name,</if>
+            <if test="className != null and className != ''">class_name,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">#{studentId},</if>
+            <if test="reportId != null and reportId != ''">#{reportId},</if>
+            <if test="reportName != null and reportName != ''">#{reportName},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="filePath != null and filePath != ''">#{filePath},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="batchId != null">#{batchId},</if>
+            <if test="isMerged != null">#{isMerged},</if>
+            <if test="mergedFromIds != null">#{mergedFromIds},</if>
+            <if test="status != null">#{status},</if>
+            <if test="studentName != null and studentName != ''">#{studentName},</if>
+            <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="gradeName != null and gradeName != ''">#{gradeName},</if>
+            <if test="className != null and className != ''">#{className},</if>
+            <if test="createBy != null">#{createBy},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStReportPdf" parameterType="StReportPdf">
+        update st_report_pdf
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="reportId != null and reportId != ''">report_id = #{reportId},</if>
+            <if test="reportName != null and reportName != ''">report_name = #{reportName},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="filePath != null and filePath != ''">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="isMerged != null">is_merged = #{isMerged},</if>
+            <if test="mergedFromIds != null">merged_from_ids = #{mergedFromIds},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="studentName != null and studentName != ''">student_name = #{studentName},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="gradeName != null and gradeName != ''">grade_name = #{gradeName},</if>
+            <if test="className != null and className != ''">class_name = #{className},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportPdfById" parameterType="Long">
+        update st_report_pdf set status = 0 where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportPdfByIds" parameterType="String">
+        update st_report_pdf set status = 0 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectStReportPdfByIds" parameterType="list" resultMap="StReportPdfResult">
+        select 
+            id, student_id, report_id, report_name, file_name, file_path, file_size,
+            year_semester_id, schooling_plan_id, grade_id, class_id, batch_id,
+            is_merged, merged_from_ids, status, create_by, create_time, update_time,
+            student_name, student_no, grade_name, class_name
+        from st_report_pdf
+        where id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>
+
+
+
+

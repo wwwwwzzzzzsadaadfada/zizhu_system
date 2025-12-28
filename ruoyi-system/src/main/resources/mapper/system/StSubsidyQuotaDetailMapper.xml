@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyQuotaDetailMapper">
+    
+    <resultMap type="StSubsidyQuotaDetail" id="StSubsidyQuotaDetailResult">
+        <result property="id"    column="id"    />
+        <result property="quotaId"    column="quota_id"    />
+        <result property="sourceDetailId"    column="source_detail_id"    />
+        <result property="isCarryover"    column="is_carryover"    />
+        <result property="sourceSemesterId"    column="source_semester_id"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="totalAmount"    column="total_amount"    />
+        <result property="allocatedAmount"    column="allocated_amount"    />
+        <result property="status"    column="status"    />
+        <result property="memo"    column="memo"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+        <!-- 计算字段（在Java代码中设置，不在SQL中查询） -->
+        <!-- availableAmount 和 isEditable 由Service层设置 -->
+    </resultMap>
+
+    <sql id="selectStSubsidyQuotaDetailVo">
+        select 
+            id, quota_id, source_detail_id, is_carryover, source_semester_id, economy_category, total_amount, allocated_amount, 
+            status, memo, created_at, updated_at
+        from st_subsidy_quota_detail
+    </sql>
+
+    <select id="selectStSubsidyQuotaDetailList" parameterType="StSubsidyQuotaDetail" resultMap="StSubsidyQuotaDetailResult">
+        <include refid="selectStSubsidyQuotaDetailVo"/>
+        <where>  
+            <if test="quotaId != null "> and quota_id = #{quotaId}</if>
+            <if test="economyCategory != null  and economyCategory != ''"> and economy_category = #{economyCategory}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+        order by id asc
+    </select>
+    
+    <select id="selectStSubsidyQuotaDetailById" parameterType="Long" resultMap="StSubsidyQuotaDetailResult">
+        <include refid="selectStSubsidyQuotaDetailVo"/>
+        where id = #{id}
+    </select>
+    
+    <!-- 查询指标明细（带悲观锁，用于并发控制） -->
+    <select id="selectStSubsidyQuotaDetailByIdForUpdate" parameterType="Long" resultMap="StSubsidyQuotaDetailResult">
+        <include refid="selectStSubsidyQuotaDetailVo"/>
+        where id = #{id}
+        FOR UPDATE
+    </select>
+    
+    <select id="selectDetailListByQuotaId" parameterType="Long" resultMap="StSubsidyQuotaDetailResult">
+        <include refid="selectStSubsidyQuotaDetailVo"/>
+        where quota_id = #{quotaId}
+        order by economy_category asc
+    </select>
+
+    <insert id="insertStSubsidyQuotaDetail" parameterType="StSubsidyQuotaDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_quota_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="quotaId != null">quota_id,</if>
+            <if test="sourceDetailId != null">source_detail_id,</if>
+            <if test="isCarryover != null">is_carryover,</if>
+            <if test="sourceSemesterId != null">source_semester_id,</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category,</if>
+            <if test="totalAmount != null">total_amount,</if>
+            <if test="allocatedAmount != null">allocated_amount,</if>
+            <if test="status != null">status,</if>
+            <if test="memo != null">memo,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="quotaId != null">#{quotaId},</if>
+            <if test="sourceDetailId != null">#{sourceDetailId},</if>
+            <if test="isCarryover != null">#{isCarryover},</if>
+            <if test="sourceSemesterId != null">#{sourceSemesterId},</if>
+            <if test="economyCategory != null and economyCategory != ''">#{economyCategory},</if>
+            <if test="totalAmount != null">#{totalAmount},</if>
+            <if test="allocatedAmount != null">#{allocatedAmount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="memo != null">#{memo},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStSubsidyQuotaDetail" parameterType="StSubsidyQuotaDetail">
+        update st_subsidy_quota_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sourceDetailId != null">source_detail_id = #{sourceDetailId},</if>
+            <if test="isCarryover != null">is_carryover = #{isCarryover},</if>
+            <if test="sourceSemesterId != null">source_semester_id = #{sourceSemesterId},</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category = #{economyCategory},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="allocatedAmount != null">allocated_amount = #{allocatedAmount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="memo != null">memo = #{memo},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyQuotaDetailById" parameterType="Long">
+        delete from st_subsidy_quota_detail where id = #{id}
+    </delete>
+
+    <delete id="deleteStSubsidyQuotaDetailByIds" parameterType="Long">
+        delete from st_subsidy_quota_detail where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <delete id="deleteDetailsByQuotaId" parameterType="Long">
+        delete from st_subsidy_quota_detail where quota_id = #{quotaId}
+    </delete>
+    
+    <!-- 更新已分配金额 -->
+    <update id="updateAllocatedAmount">
+        update st_subsidy_quota_detail
+        set allocated_amount = COALESCE(allocated_amount, 0) + #{amount},
+            updated_at = NOW()
+        where id = #{detailId}
+        and (COALESCE(allocated_amount, 0) + #{amount}) >= 0
+    </update>
+    
+    <!-- 批量插入资助指标明细 -->
+    <insert id="batchInsertStSubsidyQuotaDetail" parameterType="java.util.List">
+        insert into st_subsidy_quota_detail
+        (quota_id, source_detail_id, is_carryover, source_semester_id, economy_category, 
+         total_amount, allocated_amount, status, memo, created_at, updated_at)
+        values
+        <foreach collection="detailList" item="item" separator=",">
+            (
+                #{item.quotaId},
+                #{item.sourceDetailId},
+                #{item.isCarryover},
+                #{item.sourceSemesterId},
+                #{item.economyCategory},
+                #{item.totalAmount},
+                #{item.allocatedAmount},
+                #{item.status},
+                #{item.memo},
+                NOW(),
+                NOW()
+            )
+        </foreach>
+    </insert>
+    
+    <!-- 批量更新已分配金额 -->
+    <update id="batchUpdateAllocatedAmount">
+        <foreach collection="updates" item="item" separator=";">
+            update st_subsidy_quota_detail
+            set allocated_amount = COALESCE(allocated_amount, 0) + #{item.amount},
+                updated_at = NOW()
+            where id = #{item.detailId}
+            and (COALESCE(allocated_amount, 0) + #{item.amount}) >= 0
+        </foreach>
+    </update>
+    
+    <!-- 计算指标的结转金额（查询目标指标反向统计） -->
+    <select id="sumCarriedOverAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(d.total_amount), 0)
+        FROM st_subsidy_quota_detail d
+        WHERE d.source_detail_id IN (
+            SELECT id FROM st_subsidy_quota_detail WHERE quota_id = #{quotaId}
+        )
+        AND d.is_carryover = '1'
+    </select>
+</mapper>

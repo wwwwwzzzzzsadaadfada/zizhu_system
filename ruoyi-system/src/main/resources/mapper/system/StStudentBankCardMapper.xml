@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentBankCardMapper">
+
+    <resultMap type="StStudentBankCard" id="StStudentBankCardResult">
+        <id     property="id" column="id" />
+        <result property="studentId" column="student_id" />
+        <result property="bankAccountNo" column="bank_account_no" />
+        <result property="bankName" column="bank_name" />
+        <result property="branchName" column="branch_name" />
+        <result property="accountHolder" column="account_holder" />
+        <result property="isPrimary" column="is_primary" />
+        <result property="status" column="status" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, student_id, bank_account_no, bank_name, branch_name, account_holder,
+        is_primary, status, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="selectStStudentBankCardById" parameterType="long" resultMap="StStudentBankCardResult">
+        select <include refid="Base_Column_List"/>
+        from st_student_bank_cards
+        where id = #{id}
+    </select>
+
+    <select id="selectStStudentBankCardList" parameterType="StStudentBankCard" resultMap="StStudentBankCardResult">
+        select <include refid="Base_Column_List"/>
+        from st_student_bank_cards
+        <where>
+            <if test="studentId != null">and student_id = #{studentId}</if>
+            <if test="bankAccountNo != null and bankAccountNo != ''">and bank_account_no = #{bankAccountNo}</if>
+            <if test="isPrimary != null">and is_primary = #{isPrimary}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+        order by is_primary desc, updated_at desc
+    </select>
+
+    <insert id="insertStStudentBankCard" parameterType="StStudentBankCard" useGeneratedKeys="true" keyProperty="id">
+        insert into st_student_bank_cards(
+            student_id, bank_account_no, bank_name, branch_name, account_holder,
+            is_primary, status, created_by, updated_by
+        ) values (
+            #{studentId}, #{bankAccountNo}, #{bankName}, #{branchName}, #{accountHolder},
+            COALESCE(#{isPrimary}, 0), COALESCE(#{status}, 0), #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <update id="updateStStudentBankCard" parameterType="StStudentBankCard">
+        update st_student_bank_cards
+        set bank_account_no = #{bankAccountNo},
+            bank_name = #{bankName},
+            branch_name = #{branchName},
+            account_holder = #{accountHolder},
+            is_primary = COALESCE(#{isPrimary}, 0),
+            status = COALESCE(#{status}, 0),
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStStudentBankCardById" parameterType="long">
+        delete from st_student_bank_cards where id = #{id}
+    </delete>
+
+    <delete id="deleteStStudentBankCardByIds" parameterType="long">
+        delete from st_student_bank_cards where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByStudentId" parameterType="long">
+        delete from st_student_bank_cards where student_id = #{studentId}
+    </delete>
+
+</mapper>
+

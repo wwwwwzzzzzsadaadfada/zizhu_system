@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentsBaseMapper">
+    
+    <resultMap type="StStudentsBase" id="StStudentsBaseResult">
+        <result property="id"    column="id"    />
+        <result property="name"    column="name"    />
+        <result property="idCardNo"    column="id_card_no"    />
+        <result property="gender"    column="gender"    />
+        <result property="ethnicity"    column="ethnicity"    />
+        <result property="domicile"    column="domicile"    />
+        <result property="studentNo"    column="student_no"    />
+        <result property="schoolingPlanId" column="schooling_plan_id" />
+        <result property="gradeId" column="grade_id" />
+        <result property="classId" column="class_id" />
+        <result property="currentYearSemesterId" column="current_year_semester_id" />
+        <result property="gradeName" column="grade_name" />
+        <result property="className" column="class_name" />
+        <result property="lastGradeUpdate" column="last_grade_update" />
+        <result property="isPovertyReliefFamily" column="is_poverty_relief_family" />
+        <result property="povertyReliefYear" column="poverty_relief_year" />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+    </resultMap>
+    
+    <sql id="selectStStudentsBaseVo">
+        select 
+            sb.id, sb.name, sb.id_card_no, sb.gender, sb.ethnicity, sb.domicile,
+            sb.student_no, sb.schooling_plan_id, sb.grade_id, sb.class_id,
+            sb.current_year_semester_id,
+            g.name as grade_name, c.class_name as class_name,
+            sb.last_grade_update, sb.created_at, sb.updated_at,
+            sb.is_poverty_relief_family, sb.poverty_relief_year
+        from st_students_base sb
+        left join st_grades g on sb.grade_id = g.id
+        left join st_class_info c on sb.class_id = c.class_id
+    </sql>
+
+    <!-- 
+        查询学生基础信息列表
+        
+        安全设计：
+        - 所有查询条件由MyBatis动态SQL处理，前端无法绕过
+        - schoolingPlanId过滤在数据库层面执行，保证数据安全
+        - 支持多维度过滤：name(模糊), schoolingPlanId, gradeId, classId(精确)
+        
+        使用场景：
+        1. 报表预览页：根据报表学段过滤学生
+        2. 学生搜索：支持按姓名模糊查询
+        3. 批量操作：按学段/年级/班级查询
+     -->
+    <select id="selectStStudentsBaseList" parameterType="StStudentsBase" resultMap="StStudentsBaseResult">
+        <include refid="selectStStudentsBaseVo"/>
+        <where>  
+            <if test="name != null and name != ''">and sb.name like concat('%', #{name}, '%')</if>
+            <if test="idCardNo != null and idCardNo != ''">and sb.id_card_no = #{idCardNo}</if>
+            <if test="gender != null and gender != ''">and sb.gender = #{gender}</if>
+            <if test="ethnicity != null and ethnicity != ''">and sb.ethnicity = #{ethnicity}</if>
+            <if test="studentNo != null and studentNo != ''">and sb.student_no = #{studentNo}</if>
+            <if test="schoolingPlanId != null">and sb.schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null">and sb.grade_id = #{gradeId}</if>
+            <if test="classId != null">and sb.class_id = #{classId}</if>
+        </where>
+        order by sb.created_at desc
+    </select>
+    
+    <select id="selectStStudentsBaseById" parameterType="Long" resultMap="StStudentsBaseResult">
+        <include refid="selectStStudentsBaseVo"/>
+        where sb.id = #{id}
+    </select>
+
+    <select id="selectStStudentsBaseByIdCardNo" parameterType="String" resultMap="StStudentsBaseResult">
+        <include refid="selectStStudentsBaseVo"/>
+        where id_card_no = #{idCardNo}
+        limit 1
+    </select>
+
+    <select id="selectStStudentsBaseByStudentNo" parameterType="String" resultMap="StStudentsBaseResult">
+        <include refid="selectStStudentsBaseVo"/>
+        where student_no = #{studentNo}
+        limit 1
+    </select>
+
+    <insert id="insertStStudentsBase" parameterType="StStudentsBase" useGeneratedKeys="true" keyProperty="id">
+        insert into st_students_base
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="idCardNo != null and idCardNo != ''">id_card_no,</if>
+            <if test="gender != null and gender != ''">gender,</if>
+            <if test="ethnicity != null and ethnicity != ''">ethnicity,</if>
+            <if test="domicile != null and domicile != ''">domicile,</if>
+            <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id,</if>
+            <if test="lastGradeUpdate != null">last_grade_update,</if>
+            <if test="isPovertyReliefFamily != null">is_poverty_relief_family,</if>
+            <if test="povertyReliefYear != null">poverty_relief_year,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="idCardNo != null and idCardNo != ''">#{idCardNo},</if>
+            <if test="gender != null and gender != ''">#{gender},</if>
+            <if test="ethnicity != null and ethnicity != ''">#{ethnicity},</if>
+            <if test="domicile != null and domicile != ''">#{domicile},</if>
+            <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="currentYearSemesterId != null">#{currentYearSemesterId},</if>
+            <if test="lastGradeUpdate != null">#{lastGradeUpdate},</if>
+            <if test="isPovertyReliefFamily != null">#{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">#{povertyReliefYear},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStStudentsBase" parameterType="StStudentsBase">
+        update st_students_base
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="idCardNo != null and idCardNo != ''">id_card_no = #{idCardNo},</if>
+            <if test="gender != null and gender != ''">gender = #{gender},</if>
+            <if test="ethnicity != null and ethnicity != ''">ethnicity = #{ethnicity},</if>
+            <if test="domicile != null and domicile != ''">domicile = #{domicile},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id = #{currentYearSemesterId},</if>
+            <if test="lastGradeUpdate != null">last_grade_update = #{lastGradeUpdate},</if>
+            <if test="isPovertyReliefFamily != null">is_poverty_relief_family = #{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStStudentsBaseById" parameterType="Long">
+        delete from st_students_base where id = #{id}
+    </delete>
+
+    <delete id="deleteStStudentsBaseByIds" parameterType="Long">
+        delete from st_students_base where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 查询所有年级配置（按学制、ID排序） -->
+    <select id="selectAllGradesForPromotion" resultType="java.util.HashMap">
+        SELECT id, schooling_plan_id as schoolingPlanId
+        FROM st_grades
+        ORDER BY schooling_plan_id, id
+    </select>
+
+    <!-- 查询需要升年级的学生 -->
+    <select id="selectStudentsForPromotion" parameterType="java.util.Date" resultType="com.ruoyi.system.domain.StStudentsBase">
+        SELECT sb.id, sb.grade_id, sb.schooling_plan_id, sb.class_id, sb.last_grade_update
+        FROM st_students_base sb
+        WHERE sb.grade_id IS NOT NULL
+          AND (sb.last_grade_update IS NULL OR sb.last_grade_update &lt; #{promotionDate})
+    </select>
+
+    <!-- 更新学生年级 -->
+    <update id="updateStudentGradeForPromotion">
+        UPDATE st_students_base
+        SET grade_id = #{gradeId},
+            last_grade_update = #{lastGradeUpdate}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新所有在读学生的当前学期ID -->
+    <update id="updateAllStudentsCurrentSemester">
+        UPDATE st_students_base
+        SET current_year_semester_id = #{yearSemesterId},
+            updated_at = NOW()
+        WHERE study_status IS NULL 
+           OR study_status = '' 
+           OR study_status = '1'
+    </update>
+</mapper>

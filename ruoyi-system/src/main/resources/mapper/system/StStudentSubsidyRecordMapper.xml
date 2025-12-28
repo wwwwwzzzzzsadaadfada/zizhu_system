@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentSubsidyRecordMapper">
+    
+    <resultMap type="StStudentSubsidyRecord" id="StStudentSubsidyRecordResult">
+        <result property="id"    column="id"    />
+        <result property="studentId"    column="student_id"    />
+        <result property="studentSemesterRecordId"    column="student_semester_record_id"    />
+        <result property="budgetId"    column="budget_id"    />
+        <result property="sourceSemesterId"    column="source_semester_id"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />
+        <result property="packageId"    column="package_id"    />
+        <result property="schoolingPlanId"    column="schooling_plan_id"    />
+        <result property="subsidyType"    column="subsidy_type"    />
+        <result property="subsidyAmount"    column="subsidy_amount"    />
+        <result property="approvalStatus"    column="approval_status"    />
+        <result property="paymentStatus"    column="payment_status"    />
+        <result property="paymentDate"    column="payment_date"    />
+        <result property="paymentPerson"    column="payment_person"    />
+        <result property="approver"    column="approver"    />
+        <result property="approvalDate"    column="approval_date"    />
+        <result property="approvalMemo"    column="approval_memo"    />
+        <result property="memo"    column="memo"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+        <result property="studentName"    column="student_name"    />
+        <result property="idCardNo"    column="id_card_no"    />
+        <result property="className"    column="class_name"    />
+        <result property="gradeName"    column="grade_name"    />
+        <result property="budgetType"    column="budget_type"    />
+        <result property="budgetAvailableAmount"    column="budget_available_amount"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="budgetProjectName"    column="budget_project_name"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />  <!-- 添加学年学期ID映射 -->
+        <result property="difficultyTypeId"    column="difficulty_type_id"    />  <!-- 添加困难类型ID映射 -->
+        <result property="difficultyLevelId"    column="difficulty_level_id"    />  <!-- 添加困难等级ID映射 -->
+        <result property="schoolYear"    column="school_year"    />  <!-- 添加学年 -->
+        <result property="semester"    column="semester"    />  <!-- 添加学期 -->
+    </resultMap>
+
+    <sql id="selectStStudentSubsidyRecordVo">
+        select 
+            r.id, r.student_id, r.student_semester_record_id, r.budget_id,
+            r.subsidy_type,
+            r.subsidy_amount, r.approval_status, 
+            -- 如果审批通过（approval_status=1），发放状态显示为已发放（1），否则使用实际payment_status
+            CASE 
+                WHEN r.approval_status = 1 THEN 1
+                ELSE COALESCE(r.payment_status, 0)
+            END as payment_status,
+            r.payment_date, r.payment_person,
+            r.approver, r.approval_date, r.approval_memo, r.memo,
+            r.created_at, r.updated_at,
+            r.source_semester_id,
+            r.year_semester_id,
+            r.package_id,
+            r.schooling_plan_id,
+            -- 优先使用受助学生信息表的数据，如果不存在再从基本信息表获取
+            COALESCE(asi.student_name, sb.name, CONCAT('已删除学生#', r.student_id)) as student_name,
+            COALESCE(asi.grade, g.name, CAST(sb.grade_id AS CHAR), '') as grade_name,
+            COALESCE(asi.clazz_name, '') as class_name,
+            b.budget_type,
+            CASE 
+                WHEN d.economy_category = '1' THEN '助学金'
+                WHEN d.economy_category = '2' THEN '免学杂费'
+                WHEN d.economy_category = '3' THEN '免学费'
+                WHEN d.economy_category = '4' THEN '营养改善计划'
+                ELSE COALESCE(d.economy_category, '')
+            END as economy_category,
+            (b.budget_amount - COALESCE(b.used_amount, 0) - COALESCE(b.locked_amount, 0)) as budget_available_amount,
+            COALESCE(q.budget_project_name, b.budget_type, r.subsidy_type, '') as budget_project_name,
+            COALESCE(asi.difficulty_type_id, NULL) as difficulty_type_id,
+            COALESCE(asi.difficulty_level_id, NULL) as difficulty_level_id,
+            COALESCE(ys.school_year, '') as school_year,
+            COALESCE(ys.semester, '') as semester
+        from st_student_subsidy_records r
+        left join st_semester_budget b on r.budget_id = b.id
+        left join st_school_year_semester ys on b.year_semester_id = ys.id
+        left join st_subsidy_quota_detail d on b.quota_detail_id = d.id
+        left join st_subsidy_quota q on b.quota_id = q.id
+        left join st_aided_student_info asi on r.student_id = asi.student_id and r.year_semester_id = ys.id
+        left join st_students_base sb on r.student_id = sb.id
+        left join st_grades g on sb.grade_id = g.id
+    </sql>
+
+    <select id="selectStStudentSubsidyRecordList" parameterType="StStudentSubsidyRecord" resultMap="StStudentSubsidyRecordResult">
+        <include refid="selectStStudentSubsidyRecordVo"/>
+        <where>  
+            <if test="studentId != null">and r.student_id = #{studentId}</if>
+            <if test="studentSemesterRecordId != null">and r.student_semester_record_id = #{studentSemesterRecordId}</if>
+            <if test="budgetId != null">and r.budget_id = #{budgetId}</if>
+            <if test="subsidyType != null and subsidyType != ''">and r.subsidy_type like concat('%', #{subsidyType}, '%')</if>
+            <if test="approvalStatus != null">and r.approval_status = #{approvalStatus}</if>
+            <if test="paymentStatus != null">and r.payment_status = #{paymentStatus}</if>
+        </where>
+        order by r.created_at desc
+    </select>
+    
+    <select id="selectStStudentSubsidyRecordById" parameterType="Long" resultMap="StStudentSubsidyRecordResult">
+        <include refid="selectStStudentSubsidyRecordVo"/>
+        where r.id = #{id}
+    </select>
+
+    <insert id="insertStStudentSubsidyRecord" parameterType="StStudentSubsidyRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into st_student_subsidy_records
+        (student_id,
+         student_semester_record_id,
+         budget_id,
+         source_semester_id,
+         year_semester_id,
+         package_id,
+         schooling_plan_id,
+         subsidy_type,
+         subsidy_amount,
+         approval_status,
+         payment_status,
+         payment_date,
+         payment_person,
+         approver,
+         approval_date,
+         approval_memo,
+         memo)
+        values
+        (#{studentId},
+         COALESCE(#{studentSemesterRecordId}, #{studentId}),
+         #{budgetId},
+         #{sourceSemesterId},
+         #{yearSemesterId},
+         #{packageId},
+         #{schoolingPlanId},
+         #{subsidyType},
+         #{subsidyAmount},
+         #{approvalStatus},
+         #{paymentStatus},
+         #{paymentDate},
+         #{paymentPerson},
+         #{approver},
+         #{approvalDate},
+         #{approvalMemo},
+         #{memo})
+    </insert>
+
+    <update id="updateStStudentSubsidyRecord" parameterType="StStudentSubsidyRecord">
+        update st_student_subsidy_records
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="studentSemesterRecordId != null">student_semester_record_id = #{studentSemesterRecordId},</if>
+            <if test="budgetId != null">budget_id = #{budgetId},</if>
+            <if test="sourceSemesterId != null">source_semester_id = #{sourceSemesterId},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="packageId != null">package_id = #{packageId},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="subsidyType != null">subsidy_type = #{subsidyType},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            <if test="approvalStatus != null">approval_status = #{approvalStatus},</if>
+            <if test="paymentStatus != null">payment_status = #{paymentStatus},</if>
+            <if test="paymentDate != null">payment_date = #{paymentDate},</if>
+            <if test="paymentPerson != null">payment_person = #{paymentPerson},</if>
+            <if test="approver != null">approver = #{approver},</if>
+            <if test="approvalDate != null">approval_date = #{approvalDate},</if>
+            <if test="approvalMemo != null">approval_memo = #{approvalMemo},</if>
+            <if test="memo != null">memo = #{memo},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStStudentSubsidyRecordById" parameterType="Long">
+        delete from st_student_subsidy_records where id = #{id}
+    </delete>
+
+    <delete id="deleteStStudentSubsidyRecordByIds" parameterType="Long">
+        delete from st_student_subsidy_records where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 审批补助 -->
+    <update id="approveSubsidy">
+        update st_student_subsidy_records
+        set approval_status = #{arg1},
+            approver = #{arg2},
+            approval_date = NOW(),
+            approval_memo = #{arg3}
+            <if test="arg1 == 1">
+            ,payment_status = 0
+            </if>
+        where id = #{arg0}
+    </update>
+    
+    <!-- 批量发放补助 -->
+    <update id="batchPayment">
+        update st_student_subsidy_records
+        set payment_status = 1,
+            payment_date = #{paymentDate},
+            payment_person = #{paymentPerson},
+            updated_at = NOW()
+            <if test="memo != null and memo != ''">
+            ,memo = concat(COALESCE(memo, ''), '&#10;', #{memo})
+            </if>
+        where id in
+        <foreach item="id" collection="recordIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and approval_status = 1
+        and payment_status = 0
+    </update>
+    
+    <!-- 根据学生ID和金额查找待发放的补助记录 -->
+    <select id="selectPendingPaymentByStudentAndAmount" resultMap="StStudentSubsidyRecordResult">
+        <include refid="selectStStudentSubsidyRecordVo"/>
+        where r.student_id = #{studentBaseId}
+        and r.subsidy_amount = #{subsidyAmount}
+        and r.approval_status = 1
+        and r.payment_status = 0
+        order by r.created_at desc
+        limit 1
+    </select>
+    
+    <!-- 检查学生是否已有未审核的相同经济分类的记录 -->
+    <select id="countPendingRecordsByStudentAndEconomyCategory" resultType="int">
+        SELECT COUNT(1)
+        FROM st_student_subsidy_records r
+        INNER JOIN st_semester_budget b ON r.budget_id = b.id
+        INNER JOIN st_subsidy_quota_detail d ON b.quota_detail_id = d.id
+        WHERE r.student_id = #{studentId}
+          AND r.approval_status = 0
+          AND r.year_semester_id = #{yearSemesterId}
+          AND (
+              d.economy_category = #{economyCategory}
+              OR (d.economy_category = '1' AND #{economyCategory} = '助学金')
+              OR (d.economy_category = '2' AND #{economyCategory} = '免学杂费')
+              OR (d.economy_category = '3' AND #{economyCategory} = '免学费')
+              OR (d.economy_category = '4' AND #{economyCategory} = '营养改善计划')
+              OR (d.economy_category = '助学金' AND #{economyCategory} = '1')
+              OR (d.economy_category = '免学杂费' AND #{economyCategory} = '2')
+              OR (d.economy_category = '免学费' AND #{economyCategory} = '3')
+          OR (d.economy_category = '营养改善计划' AND #{economyCategory} = '4')
+        )
+    </select>
+    
+    <!-- 统计指定学生和学期记录ID、经济分类的已审核通过记录数量 -->
+    <select id="countApprovedRecordsByStudentAndEconomyCategory" resultType="int">
+        SELECT COUNT(1)
+        FROM st_student_subsidy_records r
+        INNER JOIN st_semester_budget b ON r.budget_id = b.id
+        INNER JOIN st_subsidy_quota_detail d ON b.quota_detail_id = d.id
+        WHERE r.student_id = #{studentId}
+          AND r.approval_status = 1
+          AND r.year_semester_id = #{yearSemesterId}
+          AND (
+              d.economy_category = #{economyCategory}
+              OR (d.economy_category = '1' AND #{economyCategory} = '助学金')
+              OR (d.economy_category = '2' AND #{economyCategory} = '免学杂费')
+              OR (d.economy_category = '3' AND #{economyCategory} = '免学费')
+              OR (d.economy_category = '4' AND #{economyCategory} = '营养改善计划')
+              OR (d.economy_category = '助学金' AND #{economyCategory} = '1')
+              OR (d.economy_category = '免学杂费' AND #{economyCategory} = '2')
+              OR (d.economy_category = '免学费' AND #{economyCategory} = '3')
+              OR (d.economy_category = '营养改善计划' AND #{economyCategory} = '4')
+          )
+    </select>
+</mapper>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentSubsidyDetailMapper">
+    
+    <resultMap type="StStudentSubsidyDetail" id="StStudentSubsidyDetailResult">
+        <result property="id"    column="id"    />
+        <result property="studentRecordId"    column="student_record_id"    />
+        <result property="budgetId"    column="budget_id"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="subsidyAmount"    column="subsidy_amount"    />
+        <result property="approvalStatus"    column="approval_status"    />
+        <result property="memo"    column="memo"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+    </resultMap>
+    
+    <sql id="selectStStudentSubsidyDetailVo">
+        select id, student_record_id, budget_id, economy_category, subsidy_amount, approval_status, memo, created_at, updated_at from st_student_subsidy_details
+    </sql>
+    
+    <select id="selectStStudentSubsidyDetailList" parameterType="StStudentSubsidyDetail" resultMap="StStudentSubsidyDetailResult">
+        <include refid="selectStStudentSubsidyDetailVo"/>
+        <where>  
+            <if test="studentRecordId != null">and student_record_id = #{studentRecordId}</if>
+            <if test="budgetId != null">and budget_id = #{budgetId}</if>
+            <if test="economyCategory != null and economyCategory != ''">and economy_category = #{economyCategory}</if>
+            <if test="approvalStatus != null">and approval_status = #{approvalStatus}</if>
+        </where>
+        order by created_at desc
+    </select>
+    
+    <select id="selectStStudentSubsidyDetailById" parameterType="Long" resultMap="StStudentSubsidyDetailResult">
+        <include refid="selectStStudentSubsidyDetailVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectStStudentSubsidyDetailByStudentRecordId" parameterType="Long" resultMap="StStudentSubsidyDetailResult">
+        <include refid="selectStStudentSubsidyDetailVo"/>
+        where student_record_id = #{studentRecordId}
+        order by economy_category
+    </select>
+    
+    <select id="selectStStudentSubsidyDetailListByBudgetId" parameterType="Long" resultMap="StStudentSubsidyDetailResult">
+        <include refid="selectStStudentSubsidyDetailVo"/>
+        where budget_id = #{budgetId}
+        order by created_at desc
+    </select>
+    
+    <insert id="insertStStudentSubsidyDetail" parameterType="StStudentSubsidyDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into st_student_subsidy_details
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="studentRecordId != null">student_record_id,</if>
+            <if test="budgetId != null">budget_id,</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category,</if>
+            <if test="subsidyAmount != null">subsidy_amount,</if>
+            approval_status,
+            <if test="memo != null">memo,</if>
+            created_at,
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="studentRecordId != null">#{studentRecordId},</if>
+            <if test="budgetId != null">#{budgetId},</if>
+            <if test="economyCategory != null and economyCategory != ''">#{economyCategory},</if>
+            <if test="subsidyAmount != null">#{subsidyAmount},</if>
+            #{approvalStatus, jdbcType=INTEGER},
+            <if test="memo != null">#{memo},</if>
+            CURRENT_TIMESTAMP,
+         </trim>
+    </insert>
+    
+    <update id="updateStStudentSubsidyDetail" parameterType="StStudentSubsidyDetail">
+        update st_student_subsidy_details
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentRecordId != null">student_record_id = #{studentRecordId},</if>
+            <if test="budgetId != null">budget_id = #{budgetId},</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category = #{economyCategory},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            approval_status = #{approvalStatus, jdbcType=INTEGER},
+            <if test="memo != null">memo = #{memo},</if>
+            updated_at = CURRENT_TIMESTAMP,
+        </trim>
+        where id = #{id}
+    </update>
+    
+    <delete id="deleteStStudentSubsidyDetailById" parameterType="Long">
+        delete from st_student_subsidy_details where id = #{id}
+    </delete>
+    
+    <delete id="deleteStStudentSubsidyDetailByStudentRecordId" parameterType="Long">
+        delete from st_student_subsidy_details where student_record_id = #{studentRecordId}
+    </delete>
+    
+    <delete id="deleteStStudentSubsidyDetailByIds" parameterType="Long">
+        delete from st_student_subsidy_details where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

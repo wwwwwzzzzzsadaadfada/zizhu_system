@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportPackageCustomMapper">
+    
+    <resultMap type="StReportPackageCustom" id="StReportPackageCustomResult">
+        <result property="id" column="id" />
+        <result property="packageCode" column="package_code" />
+        <result property="packageName" column="package_name" />
+        <result property="packageType" column="package_type" />
+        <result property="description" column="description" />
+        <result property="yearSemesterId" column="year_semester_id" />
+        <result property="schoolingPlanId" column="schooling_plan_id" />
+        <result property="gradeId" column="grade_id" />
+        <result property="classId" column="class_id" />
+        <result property="fileCount" column="file_count" />
+        <result property="totalSize" column="total_size" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="selectStReportPackageCustomVo">
+        select id, package_code, package_name, package_type, description,
+               year_semester_id, schooling_plan_id, grade_id, class_id,
+               file_count, total_size, status,
+               create_by, create_time, update_by, update_time, remark
+        from st_report_package_custom
+    </sql>
+
+    <select id="selectStReportPackageCustomList" parameterType="StReportPackageCustom" resultMap="StReportPackageCustomResult">
+        <include refid="selectStReportPackageCustomVo"/>
+        <where>  
+            <!-- 默认只查询未删除的记录 -->
+            and status = 1
+            <if test="packageCode != null and packageCode != ''">and package_code = #{packageCode}</if>
+            <if test="packageName != null and packageName != ''">and package_name like concat('%', #{packageName}, '%')</if>
+            <if test="packageType != null and packageType != ''">and package_type = #{packageType}</if>
+            <if test="yearSemesterId != null">and year_semester_id = #{yearSemesterId}</if>
+            <if test="schoolingPlanId != null">and schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null">and grade_id = #{gradeId}</if>
+            <if test="classId != null">and class_id = #{classId}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectStReportPackageCustomById" parameterType="Long" resultMap="StReportPackageCustomResult">
+        <include refid="selectStReportPackageCustomVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectStReportPackageCustomByCode" parameterType="String" resultMap="StReportPackageCustomResult">
+        <include refid="selectStReportPackageCustomVo"/>
+        where package_code = #{packageCode}
+    </select>
+        
+    <insert id="insertStReportPackageCustom" parameterType="StReportPackageCustom" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_package_custom
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="packageCode != null and packageCode != ''">package_code,</if>
+            <if test="packageName != null and packageName != ''">package_name,</if>
+            <if test="packageType != null and packageType != ''">package_type,</if>
+            <if test="description != null">description,</if>
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="fileCount != null">file_count,</if>
+            <if test="totalSize != null">total_size,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="remark != null">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="packageCode != null and packageCode != ''">#{packageCode},</if>
+            <if test="packageName != null and packageName != ''">#{packageName},</if>
+            <if test="packageType != null and packageType != ''">#{packageType},</if>
+            <if test="description != null">#{description},</if>
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="fileCount != null">#{fileCount},</if>
+            <if test="totalSize != null">#{totalSize},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="remark != null">#{remark},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStReportPackageCustom" parameterType="StReportPackageCustom">
+        update st_report_package_custom
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="packageCode != null and packageCode != ''">package_code = #{packageCode},</if>
+            <if test="packageName != null and packageName != ''">package_name = #{packageName},</if>
+            <if test="packageType != null and packageType != ''">package_type = #{packageType},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="fileCount != null">file_count = #{fileCount},</if>
+            <if test="totalSize != null">total_size = #{totalSize},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportPackageCustomById" parameterType="Long">
+        update st_report_package_custom set status = 0 where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportPackageCustomByIds" parameterType="String">
+        update st_report_package_custom set status = 0 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteStReportPackageCustomByCode" parameterType="String">
+        update st_report_package_custom set status = 0 where package_code = #{packageCode}
+    </delete>
+
+</mapper>

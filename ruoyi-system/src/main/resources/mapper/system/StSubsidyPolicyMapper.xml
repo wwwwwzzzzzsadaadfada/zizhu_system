@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyPolicyMapper">
+    
+    <resultMap type="StSubsidyPolicy" id="StSubsidyPolicyResult">
+        <result property="id" column="id" />
+        <result property="policyCode" column="policy_code" />
+        <result property="policyName" column="policy_name" />
+        <result property="policyVersion" column="policy_version" />
+        <result property="policyType" column="policy_type" />
+        <result property="content" column="content" />
+        <result property="filePath" column="file_path" />
+        <result property="fileName" column="file_name" />
+        <result property="effectiveDate" column="effective_date" />
+        <result property="expiryDate" column="expiry_date" />
+        <result property="status" column="status" />
+        <result property="publishTime" column="publish_time" />
+        <result property="publisher" column="publisher" />
+        <result property="abolishTime" column="abolish_time" />
+        <result property="abolishReason" column="abolish_reason" />
+        <result property="memo" column="memo" />
+        <result property="createdAt" column="created_at" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedAt" column="updated_at" />
+        <result property="updatedBy" column="updated_by" />
+    </resultMap>
+
+    <sql id="selectStSubsidyPolicyVo">
+        select id, policy_code, policy_name, policy_version, policy_type,
+               content, file_path, file_name, effective_date, expiry_date,
+               status, publish_time, publisher, abolish_time, abolish_reason,
+               memo, created_at, created_by, updated_at, updated_by
+        from st_subsidy_policy
+    </sql>
+
+    <select id="selectStSubsidyPolicyList" parameterType="StSubsidyPolicy" resultMap="StSubsidyPolicyResult">
+        <include refid="selectStSubsidyPolicyVo"/>
+        <where>
+            <if test="policyCode != null and policyCode != ''">and policy_code like concat('%', #{policyCode}, '%')</if>
+            <if test="policyName != null and policyName != ''">and policy_name like concat('%', #{policyName}, '%')</if>
+            <if test="policyType != null and policyType != ''">and policy_type = #{policyType}</if>
+            <if test="status != null">and status = #{status}</if>
+            <if test="effectiveDate != null">and effective_date = #{effectiveDate}</if>
+        </where>
+        order by created_at desc
+    </select>
+    
+    <select id="selectStSubsidyPolicyById" parameterType="Long" resultMap="StSubsidyPolicyResult">
+        <include refid="selectStSubsidyPolicyVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectStSubsidyPolicyByCode" parameterType="String" resultMap="StSubsidyPolicyResult">
+        <include refid="selectStSubsidyPolicyVo"/>
+        where policy_code = #{policyCode}
+    </select>
+    
+    <select id="selectEffectivePolicies" resultMap="StSubsidyPolicyResult">
+        <include refid="selectStSubsidyPolicyVo"/>
+        <where>
+            status = 1
+            and effective_date &lt;= #{currentDate}
+            and (expiry_date is null or expiry_date &gt;= #{currentDate})
+            <if test="schoolingPlanId != null">
+                and id in (
+                    select distinct policy_id
+                    from st_subsidy_policy_scope
+                    where (schooling_plan_id is null or schooling_plan_id = #{schoolingPlanId})
+                )
+            </if>
+        </where>
+        order by effective_date desc, created_at desc
+    </select>
+    
+    <select id="countByPolicyCode" resultType="int">
+        select count(1)
+        from st_subsidy_policy
+        where policy_code = #{policyCode}
+        <if test="excludeId != null">and id != #{excludeId}</if>
+    </select>
+    
+    <select id="countConflictingPolicies" resultType="int">
+        select count(1)
+        from st_subsidy_policy p
+        inner join st_subsidy_policy_scope s on p.id = s.policy_id
+        where p.status = 1
+        and p.policy_type = #{policyType}
+        and (s.schooling_plan_id is null or s.schooling_plan_id = #{schoolingPlanId})
+        and (
+            (p.effective_date &lt;= #{effectiveDate} and (p.expiry_date is null or p.expiry_date &gt;= #{effectiveDate}))
+            or (p.effective_date &lt;= #{expiryDate} and (p.expiry_date is null or p.expiry_date &gt;= #{expiryDate}))
+            or (p.effective_date &gt;= #{effectiveDate} and (p.expiry_date is null or p.expiry_date &lt;= #{expiryDate}))
+        )
+        <if test="policyId != null">and p.id != #{policyId}</if>
+    </select>
+
+    <insert id="insertStSubsidyPolicy" parameterType="StSubsidyPolicy" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_policy
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="policyCode != null and policyCode != ''">policy_code,</if>
+            <if test="policyName != null and policyName != ''">policy_name,</if>
+            <if test="policyVersion != null and policyVersion != ''">policy_version,</if>
+            <if test="policyType != null">policy_type,</if>
+            <if test="content != null">content,</if>
+            <if test="filePath != null">file_path,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="effectiveDate != null">effective_date,</if>
+            <if test="expiryDate != null">expiry_date,</if>
+            <if test="status != null">status,</if>
+            <if test="publishTime != null">publish_time,</if>
+            <if test="publisher != null">publisher,</if>
+            <if test="abolishTime != null">abolish_time,</if>
+            <if test="abolishReason != null">abolish_reason,</if>
+            <if test="memo != null">memo,</if>
+            <if test="createdBy != null">created_by,</if>
+            <if test="updatedBy != null">updated_by,</if>
+            created_at,
+            updated_at
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="policyCode != null and policyCode != ''">#{policyCode},</if>
+            <if test="policyName != null and policyName != ''">#{policyName},</if>
+            <if test="policyVersion != null and policyVersion != ''">#{policyVersion},</if>
+            <if test="policyType != null">#{policyType},</if>
+            <if test="content != null">#{content},</if>
+            <if test="filePath != null">#{filePath},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="effectiveDate != null">#{effectiveDate},</if>
+            <if test="expiryDate != null">#{expiryDate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="publishTime != null">#{publishTime},</if>
+            <if test="publisher != null">#{publisher},</if>
+            <if test="abolishTime != null">#{abolishTime},</if>
+            <if test="abolishReason != null">#{abolishReason},</if>
+            <if test="memo != null">#{memo},</if>
+            <if test="createdBy != null">#{createdBy},</if>
+            <if test="updatedBy != null">#{updatedBy},</if>
+            now(),
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStSubsidyPolicy" parameterType="StSubsidyPolicy">
+        update st_subsidy_policy
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="policyCode != null and policyCode != ''">policy_code = #{policyCode},</if>
+            <if test="policyName != null and policyName != ''">policy_name = #{policyName},</if>
+            <if test="policyVersion != null and policyVersion != ''">policy_version = #{policyVersion},</if>
+            <if test="policyType != null">policy_type = #{policyType},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="filePath != null">file_path = #{filePath},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="publisher != null">publisher = #{publisher},</if>
+            <if test="abolishTime != null">abolish_time = #{abolishTime},</if>
+            <if test="abolishReason != null">abolish_reason = #{abolishReason},</if>
+            <if test="memo != null">memo = #{memo},</if>
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+            updated_at = now()
+        </trim>
+        where id = #{id}
+    </update>
+    
+    <update id="publishPolicy">
+        update st_subsidy_policy
+        set status = 1,
+            publish_time = #{publishTime},
+            publisher = #{publisher},
+            updated_at = now()
+        where id = #{id}
+    </update>
+    
+    <update id="abolishPolicy">
+        update st_subsidy_policy
+        set status = 2,
+            abolish_time = #{abolishTime},
+            abolish_reason = #{abolishReason},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyPolicyById" parameterType="Long">
+        delete from st_subsidy_policy where id = #{id}
+    </delete>
+
+    <delete id="deleteStSubsidyPolicyByIds" parameterType="String">
+        delete from st_subsidy_policy where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
+

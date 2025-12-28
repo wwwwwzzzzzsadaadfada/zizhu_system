@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyPolicyScopeMapper">
+    
+    <resultMap type="StSubsidyPolicyScope" id="StSubsidyPolicyScopeResult">
+        <result property="id" column="id" />
+        <result property="policyId" column="policy_id" />
+        <result property="schoolingPlanId" column="schooling_plan_id" />
+        <result property="gradeName" column="grade_name" />
+        <result property="semester" column="semester" />
+        <result property="schoolYear" column="school_year" />
+        <result property="createdAt" column="created_at" />
+    </resultMap>
+
+    <sql id="selectStSubsidyPolicyScopeVo">
+        select id, policy_id, schooling_plan_id, grade_name, semester, school_year, created_at
+        from st_subsidy_policy_scope
+    </sql>
+
+    <select id="selectStSubsidyPolicyScopeList" parameterType="StSubsidyPolicyScope" resultMap="StSubsidyPolicyScopeResult">
+        <include refid="selectStSubsidyPolicyScopeVo"/>
+        <where>
+            <if test="policyId != null">and policy_id = #{policyId}</if>
+            <if test="schoolingPlanId != null">and schooling_plan_id = #{schoolingPlanId}</if>
+        </where>
+    </select>
+    
+    <select id="selectStSubsidyPolicyScopeById" parameterType="Long" resultMap="StSubsidyPolicyScopeResult">
+        <include refid="selectStSubsidyPolicyScopeVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectStSubsidyPolicyScopeByPolicyId" parameterType="Long" resultMap="StSubsidyPolicyScopeResult">
+        <include refid="selectStSubsidyPolicyScopeVo"/>
+        where policy_id = #{policyId}
+    </select>
+
+    <insert id="insertStSubsidyPolicyScope" parameterType="StSubsidyPolicyScope" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_policy_scope
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">policy_id,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeName != null">grade_name,</if>
+            <if test="semester != null">semester,</if>
+            <if test="schoolYear != null">school_year,</if>
+            created_at
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">#{policyId},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeName != null">#{gradeName},</if>
+            <if test="semester != null">#{semester},</if>
+            <if test="schoolYear != null">#{schoolYear},</if>
+            now()
+        </trim>
+    </insert>
+    
+    <insert id="batchInsertStSubsidyPolicyScope" parameterType="java.util.List">
+        insert into st_subsidy_policy_scope (policy_id, schooling_plan_id, grade_name, semester, school_year, created_at)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.policyId}, #{item.schoolingPlanId}, #{item.gradeName}, #{item.semester}, #{item.schoolYear}, now())
+        </foreach>
+    </insert>
+
+    <update id="updateStSubsidyPolicyScope" parameterType="StSubsidyPolicyScope">
+        update st_subsidy_policy_scope
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="policyId != null">policy_id = #{policyId},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeName != null">grade_name = #{gradeName},</if>
+            <if test="semester != null">semester = #{semester},</if>
+            <if test="schoolYear != null">school_year = #{schoolYear},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyPolicyScopeById" parameterType="Long">
+        delete from st_subsidy_policy_scope where id = #{id}
+    </delete>
+    
+    <delete id="deleteStSubsidyPolicyScopeByPolicyId" parameterType="Long">
+        delete from st_subsidy_policy_scope where policy_id = #{policyId}
+    </delete>
+
+    <delete id="deleteStSubsidyPolicyScopeByIds" parameterType="String">
+        delete from st_subsidy_policy_scope where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
+

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportAttachmentMapper">
+    
+    <resultMap type="StReportAttachment" id="StReportAttachmentResult">
+        <result property="id" column="id" />
+        <result property="attachType" column="attach_type" />
+        <result property="relatedId" column="related_id" />
+        <result property="fileName" column="file_name" />
+        <result property="filePath" column="file_path" />
+        <result property="fileSize" column="file_size" />
+        <result property="fileType" column="file_type" />
+        <result property="fileExt" column="file_ext" />
+        <result property="originalName" column="original_name" />
+        <result property="remark" column="remark" />
+        <result property="yearSemesterId" column="year_semester_id" />
+        <result property="sortOrder" column="sort_order" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectStReportAttachmentVo">
+        select id, attach_type, related_id, file_name, file_path, file_size,
+               file_type, file_ext, original_name, remark, year_semester_id, sort_order, status,
+               create_by, create_time, update_by, update_time
+        from st_report_attachment
+    </sql>
+
+    <select id="selectStReportAttachmentList" parameterType="StReportAttachment" resultMap="StReportAttachmentResult">
+        <include refid="selectStReportAttachmentVo"/>
+        <where>  
+            <if test="attachType != null and attachType != ''">and attach_type = #{attachType}</if>
+            <if test="relatedId != null and relatedId != ''">and related_id = #{relatedId}</if>
+            <if test="fileName != null and fileName != ''">and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="fileType != null and fileType != ''">and file_type = #{fileType}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+        order by sort_order asc, create_time desc
+    </select>
+    
+    <select id="selectStReportAttachmentById" parameterType="Long" resultMap="StReportAttachmentResult">
+        <include refid="selectStReportAttachmentVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectAttachmentByTypeAndRelatedId" resultMap="StReportAttachmentResult">
+        <include refid="selectStReportAttachmentVo"/>
+        where attach_type = #{param1} and related_id = #{param2} and status = 1
+        order by sort_order asc, create_time desc
+    </select>
+
+    <select id="countAttachmentByTypeAndRelatedId" resultType="int">
+        select count(*)
+        from st_report_attachment
+        where attach_type = #{param1} and related_id = #{param2} and status = 1
+    </select>
+        
+    <insert id="insertStReportAttachment" parameterType="StReportAttachment" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_attachment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="attachType != null and attachType != ''">attach_type,</if>
+            <if test="relatedId != null and relatedId != ''">related_id,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="filePath != null and filePath != ''">file_path,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="fileType != null and fileType != ''">file_type,</if>
+            <if test="fileExt != null and fileExt != ''">file_ext,</if>
+            <if test="originalName != null and originalName != ''">original_name,</if>
+            <if test="remark != null">remark,</if>
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="sortOrder != null">sort_order,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="attachType != null and attachType != ''">#{attachType},</if>
+            <if test="relatedId != null and relatedId != ''">#{relatedId},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="filePath != null and filePath != ''">#{filePath},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="fileType != null and fileType != ''">#{fileType},</if>
+            <if test="fileExt != null and fileExt != ''">#{fileExt},</if>
+            <if test="originalName != null and originalName != ''">#{originalName},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="sortOrder != null">#{sortOrder},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStReportAttachment" parameterType="StReportAttachment">
+        update st_report_attachment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="attachType != null and attachType != ''">attach_type = #{attachType},</if>
+            <if test="relatedId != null and relatedId != ''">related_id = #{relatedId},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="filePath != null and filePath != ''">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="fileType != null and fileType != ''">file_type = #{fileType},</if>
+            <if test="fileExt != null and fileExt != ''">file_ext = #{fileExt},</if>
+            <if test="originalName != null and originalName != ''">original_name = #{originalName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportAttachmentById" parameterType="Long">
+        update st_report_attachment set status = 0 where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportAttachmentByIds" parameterType="String">
+        update st_report_attachment set status = 0 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteAttachmentByTypeAndRelatedId">
+        update st_report_attachment 
+        set status = 0 
+        where attach_type = #{param1} and related_id = #{param2}
+    </delete>
+
+</mapper>

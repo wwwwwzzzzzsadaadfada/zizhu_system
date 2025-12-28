@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StAidedStudentInfoMapper">
+    
+    <resultMap type="StAidedStudentInfo" id="StAidedStudentInfoResult">
+        <result property="id" column="id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="studentName" column="student_name"/>
+        <result property="idCard" column="id_card"/>
+        <result property="gender" column="gender"/>
+        <result property="birthday" column="birthday"/>
+        <result property="politicalStatus" column="political_status"/>
+        <result property="nation" column="nation"/>
+        <result property="nationName" column="nation_name"/>
+        <result property="phone" column="phone"/>
+        <result property="collegeId" column="college_id"/>
+        <result property="collegeName" column="college_name"/>
+        <result property="majorId" column="major_id"/>
+        <result property="majorName" column="major_name"/>
+        <result property="grade" column="grade"/>
+        <result property="clazzId" column="clazz_id"/>
+        <result property="clazzName" column="clazz_name"/>
+        <result property="enrollmentDate" column="enrollment_date"/>
+        <result property="graduationDate" column="graduation_date"/>
+        <result property="academicYear" column="academic_year"/>
+        <result property="semester" column="semester"/>
+        <result property="difficultyTypeId" column="difficulty_type_id"/>
+        <result property="difficultyLevelId" column="difficulty_level_id"/>
+        <result property="isPovertyReliefFamily" column="is_poverty_relief_family"/>
+        <result property="povertyReliefYear" column="poverty_relief_year"/>
+        <result property="subsidyLevel" column="subsidy_level"/>
+        <result property="subsidyAmount" column="subsidy_amount"/>
+        <result property="subsidyReason" column="subsidy_reason"/>
+        <result property="subsidyStatus" column="subsidy_status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <!-- 关联字段（不直接存表）：学制、年级、功能分类、学年学期等 -->
+        <result property="schoolingPlanId" column="schooling_plan_id"/>
+        <result property="gradeId" column="grade_id"/>
+        <result property="functionCategory" column="function_category"/>
+        <result property="approvalStatus" column="approval_status"/>
+        <result property="recordSubsidyAmount" column="record_subsidy_amount"/>
+        <result property="scholarshipAmount" column="scholarship_amount"/>
+        <result property="tuitionWaiverAmount" column="tuition_waiver_amount"/>
+    </resultMap>
+    
+    <sql id="selectStAidedStudentInfoVo">
+        select 
+            asi.id, asi.student_id, asi.student_no, asi.student_name, asi.id_card, asi.gender, asi.birthday, 
+            asi.political_status, asi.nation, asi.nation_name, asi.phone, asi.college_id, asi.college_name, 
+            asi.major_id, asi.major_name, asi.grade, asi.clazz_id, asi.clazz_name, asi.enrollment_date, 
+            asi.graduation_date, asi.academic_year, asi.semester, 
+            -- 直接从受助学生信息表获取困难类型和困难等级
+            asi.difficulty_type_id,
+            asi.difficulty_level_id, 
+            asi.is_poverty_relief_family, asi.poverty_relief_year, asi.subsidy_level, asi.subsidy_amount, 
+            asi.subsidy_reason, asi.subsidy_status, asi.create_by, asi.create_time, asi.update_by, asi.update_time, 
+            asi.remark,
+            -- 关联查询学制ID（用于筛选）
+            sb.schooling_plan_id as schooling_plan_id,
+            -- 关联查询年级ID（用于筛选）
+            sb.grade_id as grade_id,
+            -- 根据学制ID计算功能分类（1=小学,2=初中,3=高中）
+            CASE 
+                WHEN sb.schooling_plan_id = 1 THEN '1'
+                WHEN sb.schooling_plan_id = 2 THEN '2'
+                WHEN sb.schooling_plan_id = 3 THEN '3'
+                ELSE NULL
+            END as function_category,
+            -- 学年学期ID（用于与补助记录关联）
+            ys.id as year_semester_id,
+            -- 补助审批状态（取当前学年学期最新一条记录的审批状态）
+            (
+                SELECT r.approval_status
+                FROM st_student_subsidy_records r
+                WHERE r.student_id = asi.student_id
+                  AND r.year_semester_id = ys.id
+                ORDER BY r.created_at DESC
+                LIMIT 1
+            ) as approval_status,
+            -- 当前学年学期已审核通过的总资助金额
+            (
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                WHERE r.student_id = asi.student_id
+                  AND r.year_semester_id = ys.id
+                  AND r.approval_status = 1
+            ) as record_subsidy_amount,
+            -- 当前学年学期助学金金额（经济分类=1/助学金）
+            (
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                JOIN st_semester_budget b ON r.budget_id = b.id
+                JOIN st_subsidy_quota_detail d ON b.quota_detail_id = d.id
+                WHERE r.student_id = asi.student_id
+                  AND r.year_semester_id = ys.id
+                  AND r.approval_status = 1
+                  AND (d.economy_category = '1' OR d.economy_category = '助学金')
+            ) as scholarship_amount,
+            -- 当前学年学期免学杂费金额（经济分类=2/免学杂费）
+            (
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                JOIN st_semester_budget b ON r.budget_id = b.id
+                JOIN st_subsidy_quota_detail d ON b.quota_detail_id = d.id
+                WHERE r.student_id = asi.student_id
+                  AND r.year_semester_id = ys.id
+                  AND r.approval_status = 1
+                  AND (d.economy_category = '2' OR d.economy_category = '免学杂费')
+            ) as tuition_waiver_amount
+        from st_aided_student_info asi
+        left join st_students_base sb on asi.student_id = sb.id
+        left join st_school_year_semester ys
+               on ys.school_year = asi.academic_year
+              and ys.semester = asi.semester
+    </sql>
+    
+    <select id="selectStAidedStudentInfoList" parameterType="StAidedStudentInfo" resultMap="StAidedStudentInfoResult">
+        <include refid="selectStAidedStudentInfoVo"/>
+        <where>  
+            <if test="studentId != null "> and asi.student_id = #{studentId}</if>
+            <if test="studentNo != null  and studentNo != ''"> and asi.student_no = #{studentNo}</if>
+            <if test="studentName != null  and studentName != ''"> and asi.student_name like concat('%', #{studentName}, '%')</if>
+            <if test="idCard != null  and idCard != ''"> and asi.id_card = #{idCard}</if>
+            <if test="gender != null  and gender != ''"> and asi.gender = #{gender}</if>
+            <if test="politicalStatus != null  and politicalStatus != ''"> and asi.political_status = #{politicalStatus}</if>
+            <if test="nation != null  and nation != ''"> and asi.nation = #{nation}</if>
+            <if test="phone != null  and phone != ''"> and asi.phone = #{phone}</if>
+            <if test="collegeId != null "> and asi.college_id = #{collegeId}</if>
+            <if test="collegeName != null  and collegeName != ''"> and asi.college_name like concat('%', #{collegeName}, '%')</if>
+            <if test="majorId != null "> and asi.major_id = #{majorId}</if>
+            <if test="majorName != null  and majorName != ''"> and asi.major_name like concat('%', #{majorName}, '%')</if>
+            <if test="grade != null  and grade != ''"> and asi.grade = #{grade}</if>
+            <if test="clazzId != null "> and asi.clazz_id = #{clazzId}</if>
+            <if test="classId != null "> and asi.clazz_id = #{classId}</if>
+            <if test="clazzName != null  and clazzName != ''"> and asi.clazz_name like concat('%', #{clazzName}, '%')</if>
+            <if test="academicYear != null  and academicYear != ''"> and asi.academic_year = #{academicYear}</if>
+            <if test="semester != null  and semester != ''"> and asi.semester = #{semester}</if>
+            <if test="difficultyTypeId != null  and difficultyTypeId != ''"> and asi.difficulty_type_id = #{difficultyTypeId}</if>
+            <if test="difficultyLevelId != null  and difficultyLevelId != ''"> and asi.difficulty_level_id = #{difficultyLevelId}</if>
+            <if test="isPovertyReliefFamily != null  and isPovertyReliefFamily != ''"> and asi.is_poverty_relief_family = #{isPovertyReliefFamily}</if>
+            <if test="subsidyLevel != null  and subsidyLevel != ''"> and asi.subsidy_level = #{subsidyLevel}</if>
+            <if test="subsidyAmount != null "> and asi.subsidy_amount = #{subsidyAmount}</if>
+            <if test="subsidyReason != null  and subsidyReason != ''"> and asi.subsidy_reason = #{subsidyReason}</if>
+            <if test="subsidyStatus != null  and subsidyStatus != ''"> and asi.subsidy_status = #{subsidyStatus}</if>
+            <!-- 根据学制ID过滤（通过关联st_students_base表） -->
+            <if test="schoolingPlanId != null"> and sb.schooling_plan_id = #{schoolingPlanId}</if>
+            <!-- 根据年级ID过滤（通过关联st_students_base表） -->
+            <if test="gradeId != null"> and sb.grade_id = #{gradeId}</if>
+            <!-- 过滤条件：只显示未录入补助（无状态）或退回补助（已驳回）的学生，排除待审批和已审批通过的学生 -->
+            <!-- 只有当 excludeWithSubsidyRecords 为 true 时（批量发放场景），才应用此过滤 -->
+            <!-- 主列表查询默认显示所有学生（包括已审批通过的） -->
+            <if test="excludeWithSubsidyRecords != null and excludeWithSubsidyRecords == true">
+                and (
+                    -- 未录入补助（当前学年学期没有任何补助记录）
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM st_student_subsidy_records r2
+                        WHERE r2.student_id = asi.student_id
+                          AND r2.year_semester_id = ys.id
+                    )
+                    OR
+                    -- 退回补助（当前学年学期最新一条记录的审批状态为已驳回/2）
+                    EXISTS (
+                        SELECT 1
+                        FROM st_student_subsidy_records r3
+                        WHERE r3.student_id = asi.student_id
+                          AND r3.year_semester_id = ys.id
+                          AND r3.approval_status = 2
+                          AND r3.id = (
+                              SELECT r4.id
+                              FROM st_student_subsidy_records r4
+                              WHERE r4.student_id = asi.student_id
+                                AND r4.year_semester_id = ys.id
+                              ORDER BY r4.created_at DESC
+                              LIMIT 1
+                          )
+                    )
+                )
+            </if>
+        </where>
+    </select>
+    
+    <select id="selectStAidedStudentInfoById" parameterType="Long" resultMap="StAidedStudentInfoResult">
+        <include refid="selectStAidedStudentInfoVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectByStudentIdAndSemester" resultMap="StAidedStudentInfoResult">
+        <include refid="selectStAidedStudentInfoVo"/>
+        where student_id = #{studentId} and academic_year = #{academicYear} and semester = #{semester}
+    </select>
+        
+    <insert id="insertStAidedStudentInfo" parameterType="StAidedStudentInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into st_aided_student_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">student_id,</if>
+            <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="studentName != null and studentName != ''">student_name,</if>
+            <if test="idCard != null">id_card,</if>
+            <if test="gender != null">gender,</if>
+            <if test="birthday != null">birthday,</if>
+            <if test="politicalStatus != null">political_status,</if>
+            <if test="nation != null">nation,</if>
+            <if test="nationName != null">nation_name,</if>
+            <if test="phone != null">phone,</if>
+            <if test="collegeId != null">college_id,</if>
+            <if test="collegeName != null">college_name,</if>
+            <if test="majorId != null">major_id,</if>
+            <if test="majorName != null">major_name,</if>
+            <if test="grade != null">grade,</if>
+            <if test="clazzId != null">clazz_id,</if>
+            <if test="clazzName != null">clazz_name,</if>
+            <if test="enrollmentDate != null">enrollment_date,</if>
+            <if test="graduationDate != null">graduation_date,</if>
+            <if test="academicYear != null">academic_year,</if>
+            <if test="semester != null">semester,</if>
+            <if test="difficultyTypeId != null">difficulty_type_id,</if>
+            <if test="difficultyLevelId != null">difficulty_level_id,</if>
+            <if test="isPovertyReliefFamily != null">is_poverty_relief_family,</if>
+            <if test="povertyReliefYear != null">poverty_relief_year,</if>
+            <if test="subsidyLevel != null">subsidy_level,</if>
+            <if test="subsidyAmount != null">subsidy_amount,</if>
+            <if test="subsidyReason != null">subsidy_reason,</if>
+            <if test="subsidyStatus != null">subsidy_status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">#{studentId},</if>
+            <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="studentName != null and studentName != ''">#{studentName},</if>
+            <if test="idCard != null">#{idCard},</if>
+            <if test="gender != null">#{gender},</if>
+            <if test="birthday != null">#{birthday},</if>
+            <if test="politicalStatus != null">#{politicalStatus},</if>
+            <if test="nation != null">#{nation},</if>
+            <if test="nationName != null">#{nationName},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="collegeId != null">#{collegeId},</if>
+            <if test="collegeName != null">#{collegeName},</if>
+            <if test="majorId != null">#{majorId},</if>
+            <if test="majorName != null">#{majorName},</if>
+            <if test="grade != null">#{grade},</if>
+            <if test="clazzId != null">#{clazzId},</if>
+            <if test="clazzName != null">#{clazzName},</if>
+            <if test="enrollmentDate != null">#{enrollmentDate},</if>
+            <if test="graduationDate != null">#{graduationDate},</if>
+            <if test="academicYear != null">#{academicYear},</if>
+            <if test="semester != null">#{semester},</if>
+            <if test="difficultyTypeId != null">#{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null">#{difficultyLevelId},</if>
+            <if test="isPovertyReliefFamily != null">#{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">#{povertyReliefYear},</if>
+            <if test="subsidyLevel != null">#{subsidyLevel},</if>
+            <if test="subsidyAmount != null">#{subsidyAmount},</if>
+            <if test="subsidyReason != null">#{subsidyReason},</if>
+            <if test="subsidyStatus != null">#{subsidyStatus},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+    
+    <update id="updateStAidedStudentInfo" parameterType="StAidedStudentInfo">
+        update st_aided_student_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="studentName != null and studentName != ''">student_name = #{studentName},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="politicalStatus != null">political_status = #{politicalStatus},</if>
+            <if test="nation != null">nation = #{nation},</if>
+            <if test="nationName != null">nation_name = #{nationName},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="collegeId != null">college_id = #{collegeId},</if>
+            <if test="collegeName != null">college_name = #{collegeName},</if>
+            <if test="majorId != null">major_id = #{majorId},</if>
+            <if test="majorName != null">major_name = #{majorName},</if>
+            <if test="grade != null">grade = #{grade},</if>
+            <if test="clazzId != null">clazz_id = #{clazzId},</if>
+            <if test="clazzName != null">clazz_name = #{clazzName},</if>
+            <if test="enrollmentDate != null">enrollment_date = #{enrollmentDate},</if>
+            <if test="graduationDate != null">graduation_date = #{graduationDate},</if>
+            <if test="academicYear != null">academic_year = #{academicYear},</if>
+            <if test="semester != null">semester = #{semester},</if>
+            <if test="difficultyTypeId != null">difficulty_type_id = #{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null">difficulty_level_id = #{difficultyLevelId},</if>
+            <if test="isPovertyReliefFamily != null">is_poverty_relief_family = #{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
+            <if test="subsidyLevel != null">subsidy_level = #{subsidyLevel},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            <if test="subsidyReason != null">subsidy_reason = #{subsidyReason},</if>
+            <if test="subsidyStatus != null">subsidy_status = #{subsidyStatus},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+    
+    <update id="updateBaseFields" parameterType="StAidedStudentInfo">
+        update st_aided_student_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="studentName != null and studentName != ''">student_name = #{studentName},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="isPovertyReliefFamily != null">is_poverty_relief_family = #{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where student_id = #{studentId} and academic_year = #{academicYear} and semester = #{semester}
+    </update>
+    
+    <delete id="deleteStAidedStudentInfoById" parameterType="Long">
+        delete from st_aided_student_info where id = #{id}
+    </delete>
+    
+    <delete id="deleteStAidedStudentInfoByIds" parameterType="String">
+        delete from st_aided_student_info where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

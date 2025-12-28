@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportPackageMapper">
+    
+    <resultMap type="StReportPackage" id="StReportPackageResult">
+        <result property="id" column="id" />
+        <result property="packageName" column="package_name" />
+        <result property="packageType" column="package_type" />
+        <result property="targetDir" column="target_dir" />
+        <result property="zipFileName" column="zip_file_name" />
+        <result property="zipFilePath" column="zip_file_path" />
+        <result property="status" column="status" />
+        <result property="fileCount" column="file_count" />
+        <result property="totalSize" column="total_size" />
+        <result property="errorMsg" column="error_msg" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectStReportPackageVo">
+        select id, package_name, package_type, target_dir, zip_file_name, zip_file_path, 
+               status, file_count, total_size, error_msg, create_by, create_time, update_time
+        from st_report_package
+    </sql>
+
+    <select id="selectStReportPackageList" parameterType="StReportPackage" resultMap="StReportPackageResult">
+        <include refid="selectStReportPackageVo"/>
+        <where>  
+            <if test="packageName != null and packageName != ''"> and package_name like concat('%', #{packageName}, '%')</if>
+            <if test="packageType != null and packageType != ''"> and package_type = #{packageType}</if>
+            <if test="status != null"> and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectStReportPackageById" parameterType="Long" resultMap="StReportPackageResult">
+        <include refid="selectStReportPackageVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertStReportPackage" parameterType="StReportPackage" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_package
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="packageName != null and packageName != ''">package_name,</if>
+            <if test="packageType != null">package_type,</if>
+            <if test="targetDir != null">target_dir,</if>
+            <if test="zipFileName != null">zip_file_name,</if>
+            <if test="zipFilePath != null">zip_file_path,</if>
+            <if test="status != null">status,</if>
+            <if test="fileCount != null">file_count,</if>
+            <if test="totalSize != null">total_size,</if>
+            <if test="errorMsg != null">error_msg,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="packageName != null and packageName != ''">#{packageName},</if>
+            <if test="packageType != null">#{packageType},</if>
+            <if test="targetDir != null">#{targetDir},</if>
+            <if test="zipFileName != null">#{zipFileName},</if>
+            <if test="zipFilePath != null">#{zipFilePath},</if>
+            <if test="status != null">#{status},</if>
+            <if test="fileCount != null">#{fileCount},</if>
+            <if test="totalSize != null">#{totalSize},</if>
+            <if test="errorMsg != null">#{errorMsg},</if>
+            <if test="createBy != null">#{createBy},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStReportPackage" parameterType="StReportPackage">
+        update st_report_package
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="packageName != null and packageName != ''">package_name = #{packageName},</if>
+            <if test="packageType != null">package_type = #{packageType},</if>
+            <if test="targetDir != null">target_dir = #{targetDir},</if>
+            <if test="zipFileName != null">zip_file_name = #{zipFileName},</if>
+            <if test="zipFilePath != null">zip_file_path = #{zipFilePath},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="fileCount != null">file_count = #{fileCount},</if>
+            <if test="totalSize != null">total_size = #{totalSize},</if>
+            <if test="errorMsg != null">error_msg = #{errorMsg},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportPackageById" parameterType="Long">
+        delete from st_report_package where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportPackageByIds" parameterType="String">
+        delete from st_report_package where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+

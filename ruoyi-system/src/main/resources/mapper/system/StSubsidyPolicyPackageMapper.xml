@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyPolicyPackageMapper">
+    
+    <resultMap type="StSubsidyPolicyPackage" id="StSubsidyPolicyPackageResult">
+        <result property="id" column="id" />
+        <result property="policyId" column="policy_id" />
+        <result property="packageId" column="package_id" />
+        <result property="packageName" column="package_name" />
+        <result property="subsidyAmount" column="subsidy_amount" />
+        <result property="sortOrder" column="sort_order" />
+        <result property="createdAt" column="created_at" />
+    </resultMap>
+
+    <sql id="selectStSubsidyPolicyPackageVo">
+        select id, policy_id, package_id, package_name, subsidy_amount, sort_order, created_at
+        from st_subsidy_policy_package
+    </sql>
+
+    <select id="selectStSubsidyPolicyPackageList" parameterType="StSubsidyPolicyPackage" resultMap="StSubsidyPolicyPackageResult">
+        <include refid="selectStSubsidyPolicyPackageVo"/>
+        <where>
+            <if test="policyId != null">and policy_id = #{policyId}</if>
+            <if test="packageId != null">and package_id = #{packageId}</if>
+        </where>
+        order by sort_order asc
+    </select>
+    
+    <select id="selectStSubsidyPolicyPackageById" parameterType="Long" resultMap="StSubsidyPolicyPackageResult">
+        <include refid="selectStSubsidyPolicyPackageVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectStSubsidyPolicyPackageByPolicyId" parameterType="Long" resultMap="StSubsidyPolicyPackageResult">
+        <include refid="selectStSubsidyPolicyPackageVo"/>
+        where policy_id = #{policyId}
+        order by sort_order asc
+    </select>
+
+    <insert id="insertStSubsidyPolicyPackage" parameterType="StSubsidyPolicyPackage" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_policy_package
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">policy_id,</if>
+            <if test="packageId != null">package_id,</if>
+            <if test="packageName != null">package_name,</if>
+            <if test="subsidyAmount != null">subsidy_amount,</if>
+            <if test="sortOrder != null">sort_order,</if>
+            created_at
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">#{policyId},</if>
+            <if test="packageId != null">#{packageId},</if>
+            <if test="packageName != null">#{packageName},</if>
+            <if test="subsidyAmount != null">#{subsidyAmount},</if>
+            <if test="sortOrder != null">#{sortOrder},</if>
+            now()
+        </trim>
+    </insert>
+    
+    <insert id="batchInsertStSubsidyPolicyPackage" parameterType="java.util.List">
+        insert into st_subsidy_policy_package (policy_id, package_id, package_name, subsidy_amount, sort_order, created_at)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.policyId}, #{item.packageId}, #{item.packageName}, #{item.subsidyAmount}, #{item.sortOrder}, now())
+        </foreach>
+    </insert>
+
+    <update id="updateStSubsidyPolicyPackage" parameterType="StSubsidyPolicyPackage">
+        update st_subsidy_policy_package
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="policyId != null">policy_id = #{policyId},</if>
+            <if test="packageId != null">package_id = #{packageId},</if>
+            <if test="packageName != null">package_name = #{packageName},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyPolicyPackageById" parameterType="Long">
+        delete from st_subsidy_policy_package where id = #{id}
+    </delete>
+    
+    <delete id="deleteStSubsidyPolicyPackageByPolicyId" parameterType="Long">
+        delete from st_subsidy_policy_package where policy_id = #{policyId}
+    </delete>
+
+    <delete id="deleteStSubsidyPolicyPackageByIds" parameterType="String">
+        delete from st_subsidy_policy_package where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
+

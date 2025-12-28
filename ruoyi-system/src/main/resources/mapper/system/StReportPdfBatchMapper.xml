@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportPdfBatchMapper">
+    
+    <resultMap type="StReportPdfBatch" id="StReportPdfBatchResult">
+        <result property="id" column="id" />
+        <result property="batchId" column="batch_id" />
+        <result property="batchName" column="batch_name" />
+        <result property="mergedFileName" column="merged_file_name" />
+        <result property="mergedFilePath" column="merged_file_path" />
+        <result property="mergedFileSize" column="merged_file_size" />
+        <result property="studentCount" column="student_count" />
+        <result property="yearSemesterId" column="year_semester_id" />
+        <result property="schoolingPlanId" column="schooling_plan_id" />
+        <result property="gradeId" column="grade_id" />
+        <result property="classId" column="class_id" />
+        <result property="filterConditions" column="filter_conditions" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectStReportPdfBatchVo">
+        select id, batch_id, batch_name, merged_file_name, merged_file_path, merged_file_size,
+               student_count, year_semester_id, schooling_plan_id, grade_id, class_id,
+               filter_conditions, status, create_by, create_time, update_time
+        from st_report_pdf_batch
+    </sql>
+
+    <select id="selectStReportPdfBatchList" parameterType="StReportPdfBatch" resultMap="StReportPdfBatchResult">
+        <include refid="selectStReportPdfBatchVo"/>
+        <where>  
+            <if test="batchId != null and batchId != ''">and batch_id = #{batchId}</if>
+            <if test="batchName != null and batchName != ''">and batch_name like concat('%', #{batchName}, '%')</if>
+            <if test="yearSemesterId != null">and year_semester_id = #{yearSemesterId}</if>
+            <if test="schoolingPlanId != null">and schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null">and grade_id = #{gradeId}</if>
+            <if test="classId != null">and class_id = #{classId}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectStReportPdfBatchById" parameterType="Long" resultMap="StReportPdfBatchResult">
+        <include refid="selectStReportPdfBatchVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectStReportPdfBatchByBatchId" parameterType="String" resultMap="StReportPdfBatchResult">
+        <include refid="selectStReportPdfBatchVo"/>
+        where batch_id = #{batchId}
+    </select>
+        
+    <insert id="insertStReportPdfBatch" parameterType="StReportPdfBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_pdf_batch
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="batchId != null and batchId != ''">batch_id,</if>
+            <if test="batchName != null and batchName != ''">batch_name,</if>
+            merged_file_name,
+            merged_file_path,
+            <if test="mergedFileSize != null">merged_file_size,</if>
+            <if test="studentCount != null">student_count,</if>
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="filterConditions != null">filter_conditions,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="batchId != null and batchId != ''">#{batchId},</if>
+            <if test="batchName != null and batchName != ''">#{batchName},</if>
+            <choose>
+                <when test="mergedFileName != null and mergedFileName != ''">#{mergedFileName},</when>
+                <otherwise>'',</otherwise>
+            </choose>
+            <choose>
+                <when test="mergedFilePath != null and mergedFilePath != ''">#{mergedFilePath},</when>
+                <otherwise>'',</otherwise>
+            </choose>
+            <if test="mergedFileSize != null">#{mergedFileSize},</if>
+            <if test="studentCount != null">#{studentCount},</if>
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="filterConditions != null">#{filterConditions},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateStReportPdfBatch" parameterType="StReportPdfBatch">
+        update st_report_pdf_batch
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="batchId != null and batchId != ''">batch_id = #{batchId},</if>
+            <if test="batchName != null and batchName != ''">batch_name = #{batchName},</if>
+            <if test="mergedFileName != null and mergedFileName != ''">merged_file_name = #{mergedFileName},</if>
+            <if test="mergedFilePath != null and mergedFilePath != ''">merged_file_path = #{mergedFilePath},</if>
+            <if test="mergedFileSize != null">merged_file_size = #{mergedFileSize},</if>
+            <if test="studentCount != null">student_count = #{studentCount},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="filterConditions != null">filter_conditions = #{filterConditions},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportPdfBatchById" parameterType="Long">
+        update st_report_pdf_batch set status = 0 where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportPdfBatchByIds" parameterType="String">
+        update st_report_pdf_batch set status = 0 where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>
+
+
+
+

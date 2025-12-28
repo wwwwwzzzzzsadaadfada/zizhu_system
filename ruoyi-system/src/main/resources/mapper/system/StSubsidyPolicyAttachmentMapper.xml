@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyPolicyAttachmentMapper">
+    
+    <resultMap type="StSubsidyPolicyAttachment" id="StSubsidyPolicyAttachmentResult">
+        <result property="id" column="id" />
+        <result property="policyId" column="policy_id" />
+        <result property="fileName" column="file_name" />
+        <result property="filePath" column="file_path" />
+        <result property="fileSize" column="file_size" />
+        <result property="fileType" column="file_type" />
+        <result property="uploadTime" column="upload_time" />
+        <result property="uploadBy" column="upload_by" />
+    </resultMap>
+
+    <sql id="selectStSubsidyPolicyAttachmentVo">
+        select id, policy_id, file_name, file_path, file_size, file_type, upload_time, upload_by
+        from st_subsidy_policy_attachment
+    </sql>
+
+    <select id="selectStSubsidyPolicyAttachmentList" parameterType="StSubsidyPolicyAttachment" resultMap="StSubsidyPolicyAttachmentResult">
+        <include refid="selectStSubsidyPolicyAttachmentVo"/>
+        <where>
+            <if test="policyId != null">and policy_id = #{policyId}</if>
+        </where>
+        order by upload_time desc
+    </select>
+    
+    <select id="selectStSubsidyPolicyAttachmentById" parameterType="Long" resultMap="StSubsidyPolicyAttachmentResult">
+        <include refid="selectStSubsidyPolicyAttachmentVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectStSubsidyPolicyAttachmentByPolicyId" parameterType="Long" resultMap="StSubsidyPolicyAttachmentResult">
+        <include refid="selectStSubsidyPolicyAttachmentVo"/>
+        where policy_id = #{policyId}
+        order by upload_time desc
+    </select>
+
+    <insert id="insertStSubsidyPolicyAttachment" parameterType="StSubsidyPolicyAttachment" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_policy_attachment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">policy_id,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="filePath != null and filePath != ''">file_path,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="fileType != null">file_type,</if>
+            <if test="uploadBy != null">upload_by,</if>
+            upload_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="policyId != null">#{policyId},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="filePath != null and filePath != ''">#{filePath},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="fileType != null">#{fileType},</if>
+            <if test="uploadBy != null">#{uploadBy},</if>
+            now()
+        </trim>
+    </insert>
+    
+    <insert id="batchInsertStSubsidyPolicyAttachment" parameterType="java.util.List">
+        insert into st_subsidy_policy_attachment (policy_id, file_name, file_path, file_size, file_type, upload_by, upload_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.policyId}, #{item.fileName}, #{item.filePath}, #{item.fileSize}, #{item.fileType}, #{item.uploadBy}, now())
+        </foreach>
+    </insert>
+
+    <update id="updateStSubsidyPolicyAttachment" parameterType="StSubsidyPolicyAttachment">
+        update st_subsidy_policy_attachment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="policyId != null">policy_id = #{policyId},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="filePath != null and filePath != ''">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="fileType != null">file_type = #{fileType},</if>
+            <if test="uploadBy != null">upload_by = #{uploadBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyPolicyAttachmentById" parameterType="Long">
+        delete from st_subsidy_policy_attachment where id = #{id}
+    </delete>
+    
+    <delete id="deleteStSubsidyPolicyAttachmentByPolicyId" parameterType="Long">
+        delete from st_subsidy_policy_attachment where policy_id = #{policyId}
+    </delete>
+
+    <delete id="deleteStSubsidyPolicyAttachmentByIds" parameterType="String">
+        delete from st_subsidy_policy_attachment where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
+

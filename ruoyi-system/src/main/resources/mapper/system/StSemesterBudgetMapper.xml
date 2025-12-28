@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSemesterBudgetMapper">
+    
+    <resultMap type="StSemesterBudget" id="StSemesterBudgetResult">
+        <result property="id"    column="id"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />
+        <result property="quotaId"    column="quota_id"    />
+        <result property="quotaDetailId"    column="quota_detail_id"    />
+        <result property="isCarryover"    column="is_carryover"    />
+        <result property="sourceSemesterId"    column="source_semester_id"    />
+        <result property="budgetType"    column="budget_type"    />
+        <result property="budgetAmount"    column="budget_amount"    />
+        <result property="usedAmount"    column="used_amount"    />
+        <result property="lockedAmount"    column="locked_amount"    />
+        <result property="status"    column="status"    />
+        <result property="memo"    column="memo"    />
+        <result property="createTime"    column="created_at"    />
+        <result property="updateTime"    column="updated_at"    />
+        <!-- 关联查询字段 -->
+        <result property="schoolYear"    column="school_year"    />
+        <result property="semester"    column="semester"    />
+        <result property="semesterLabel"    column="semester_label"    />
+        <result property="quotaDocNo"    column="quota_doc_no"    />
+        <result property="budgetProjectName"    column="budget_project_name"    />
+        <result property="functionCategory"    column="function_category"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="quotaSourceType"    column="quota_source_type"    />
+        <result property="quotaYearSemesterId"    column="quota_year_semester_id"    />
+        <result property="carryOverFlag"    column="carry_over_flag"    />
+        <result property="sourceDetailId"    column="source_detail_id"    />
+        <result property="availableAmount"    column="available_amount"    />
+    </resultMap>
+
+    <sql id="selectStSemesterBudgetVo">
+        select 
+            b.id, b.year_semester_id, b.quota_id, b.quota_detail_id, b.is_carryover, b.source_semester_id, b.budget_type,
+            b.budget_amount, b.used_amount, b.locked_amount, b.status, b.memo,
+            b.created_at, b.updated_at,
+            ys.school_year,
+            ys.semester,
+            <!-- 学期标签：不再在SQL中计算，改为在Java代码中使用SemesterUtils.getSemesterLabel处理 -->
+            NULL as semester_label,
+            q.quota_doc_no, q.budget_project_name, q.function_category, q.quota_source_type, q.year_semester_id as quota_year_semester_id,
+            d.economy_category, d.source_detail_id,
+            <!-- 结转标志：不再在SQL中计算，改为在Java代码中使用BudgetBusinessRule.isCarryOverQuota处理 -->
+            NULL as carry_over_flag,
+            (b.budget_amount - COALESCE(b.used_amount, 0) - COALESCE(b.locked_amount, 0)) as available_amount
+        from st_semester_budget b
+        left join st_school_year_semester ys on b.year_semester_id = ys.id
+        left join st_subsidy_quota q on b.quota_id = q.id
+        left join st_subsidy_quota_detail d on b.quota_detail_id = d.id
+    </sql>
+
+    <select id="selectStSemesterBudgetList" parameterType="StSemesterBudget" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        <where>  
+            <if test="yearSemesterId != null">and b.year_semester_id = #{yearSemesterId}</if>
+            <if test="quotaId != null">and b.quota_id = #{quotaId}</if>
+            <if test="quotaDetailId != null">and b.quota_detail_id = #{quotaDetailId}</if>
+            <if test="budgetType != null and budgetType != ''">and b.budget_type like concat('%', #{budgetType}, '%')</if>
+            <if test="budgetProjectName != null and budgetProjectName != ''">and q.budget_project_name = #{budgetProjectName}</if>
+            <if test="functionCategory != null and functionCategory != ''">and q.function_category = #{functionCategory}</if>
+            <if test="economyCategory != null and economyCategory != ''">and d.economy_category = #{economyCategory}</if>
+            <!-- 如果前端没有显式传入状态，则默认过滤掉"作废(4)"记录，由后端统一控制 -->
+            <if test="status != null">and b.status = #{status}</if>
+            <if test="status == null">and b.status != 4</if>
+            <if test="schoolYear != null and schoolYear != ''">and ys.school_year = #{schoolYear}</if>
+            <if test="semester != null">and ys.semester = #{semester}</if>
+        </where>
+        order by q.function_category ASC, b.created_at desc
+    </select>
+    
+    <select id="selectStSemesterBudgetById" parameterType="Long" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        where b.id = #{id}
+    </select>
+    
+    <!-- 查询预算（带悲观锁，用于并发控制） -->
+    <select id="selectStSemesterBudgetByIdForUpdate" parameterType="Long" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        where b.id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="selectAvailableBudgets" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        <where>
+            <if test="yearSemesterId != null">and b.year_semester_id = #{yearSemesterId}</if>
+            <if test="economyCategory != null and economyCategory != ''">and d.economy_category = #{economyCategory}</if>
+            <!-- 功能分类过滤：业务逻辑（如义教阶段预算组合）应在Service层处理，这里只负责数据查询 -->
+            <if test="functionCategories != null and functionCategories.size() > 0">
+                and (q.function_category IN
+                <foreach collection="functionCategories" item="fc" open="(" separator="," close=")">
+                    #{fc}
+                </foreach>
+                or q.function_category is null or q.function_category = '')
+            </if>
+            <!-- 排除作废状态，其他状态都可以获取（但只有启用状态可以选择） -->
+            and b.status != 4
+            and (b.budget_amount - COALESCE(b.used_amount, 0) - COALESCE(b.locked_amount, 0)) &gt; 0
+            <!-- 注意：当前学期预算过滤逻辑已移到Java代码中（HistoricalSurplusUtils.isCurrentSemesterBudget），这里只查询所有可能的预算 -->
+            <if test="yearSemesterId != null">
+                and b.year_semester_id = #{yearSemesterId}
+            </if>
+        </where>
+        order by b.created_at desc
+    </select>
+
+    <!-- 查询所有可能的预算（不过滤历史结余，由Service层处理） -->
+    <select id="selectAllPossibleBudgets" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        <where>
+            <if test="yearSemesterId != null">and b.year_semester_id &lt;= #{yearSemesterId}</if>
+            <if test="economyCategory != null and economyCategory != ''">and d.economy_category = #{economyCategory}</if>
+            <!-- 功能分类过滤：业务逻辑（如义教阶段预算组合）应在Service层处理，这里只负责数据查询 -->
+            <if test="functionCategories != null and functionCategories.size() > 0">
+                and (q.function_category IN
+                <foreach collection="functionCategories" item="fc" open="(" separator="," close=")">
+                    #{fc}
+                </foreach>
+                or q.function_category is null or q.function_category = '')
+            </if>
+            <!-- 排除作废状态，其他状态都可以获取（但只有启用状态可以选择） -->
+            and b.status != 4
+            and (b.budget_amount - COALESCE(b.used_amount, 0)) &gt; 0
+            <!-- 注意：历史结余判断逻辑已移到Java代码中（HistoricalSurplusUtils），这里只查询所有可能的预算 -->
+        </where>
+        order by b.year_semester_id desc, b.created_at desc
+    </select>
+    
+    <!-- 查询历史结余预算（已废弃，保留用于兼容） -->
+    <select id="selectHistoricalSurplus" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        <where>
+            <if test="economyCategory != null and economyCategory != ''">and d.economy_category = #{economyCategory}</if>
+            <!-- 功能分类过滤：业务逻辑（如义教阶段预算组合）应在Service层处理，这里只负责数据查询 -->
+            <if test="functionCategories != null and functionCategories.size() > 0">
+                and (q.function_category IN
+                <foreach collection="functionCategories" item="fc" open="(" separator="," close=")">
+                    #{fc}
+                </foreach>
+                or q.function_category is null or q.function_category = '')
+            </if>
+            <!-- 排除作废状态，其他状态都可以获取（但只有启用状态可以选择） -->
+            and b.status != 4
+            and (b.budget_amount - COALESCE(b.used_amount, 0)) &gt; 0
+            <!-- 历史结余判断逻辑已移到Java代码中，这里保留旧的SQL逻辑用于兼容 -->
+            <if test="yearSemesterId != null">
+                and (
+                    b.year_semester_id &lt; #{yearSemesterId}
+                    OR (b.year_semester_id = #{yearSemesterId} AND q.year_semester_id IS NOT NULL AND q.year_semester_id &lt; #{yearSemesterId})
+                    OR (b.year_semester_id = #{yearSemesterId} AND q.quota_source_type IS NOT NULL AND q.quota_source_type IN (2, 3))
+                )
+            </if>
+        </where>
+        order by b.year_semester_id desc, b.created_at desc
+    </select>
+    
+    <!-- 根据预算ID查询经济分类代码 -->
+    <!-- 注意：返回的是代码（如"1"、"2"），不是中文名称。中文名称转换应在Service层使用工具类处理。 -->
+    <select id="selectEconomyCategoryByBudgetId" parameterType="Long" resultType="String">
+        SELECT d.economy_category
+        FROM st_semester_budget b
+        JOIN st_subsidy_quota_detail d ON b.quota_detail_id = d.id
+        WHERE b.id = #{budgetId}
+    </select>
+
+    <insert id="insertStSemesterBudget" parameterType="StSemesterBudget" useGeneratedKeys="true" keyProperty="id">
+        insert into st_semester_budget
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="quotaId != null">quota_id,</if>
+            <if test="quotaDetailId != null">quota_detail_id,</if>
+            <if test="isCarryover != null">is_carryover,</if>
+            <if test="sourceSemesterId != null">source_semester_id,</if>
+            <if test="budgetType != null and budgetType != ''">budget_type,</if>
+            <if test="budgetAmount != null">budget_amount,</if>
+            <if test="usedAmount != null">used_amount,</if>
+            <if test="lockedAmount != null">locked_amount,</if>
+            <if test="status != null">status,</if>
+            <if test="memo != null">memo,</if>
+            created_at
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="quotaId != null">#{quotaId},</if>
+            <if test="quotaDetailId != null">#{quotaDetailId},</if>
+            <if test="isCarryover != null">#{isCarryover},</if>
+            <if test="sourceSemesterId != null">#{sourceSemesterId},</if>
+            <if test="budgetType != null and budgetType != ''">#{budgetType},</if>
+            <if test="budgetAmount != null">#{budgetAmount},</if>
+            <if test="usedAmount != null">#{usedAmount},</if>
+            <if test="lockedAmount != null">#{lockedAmount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="memo != null">#{memo},</if>
+            sysdate()
+         </trim>
+    </insert>
+
+    <update id="updateStSemesterBudget" parameterType="StSemesterBudget">
+        update st_semester_budget
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="quotaId != null">quota_id = #{quotaId},</if>
+            <if test="quotaDetailId != null">quota_detail_id = #{quotaDetailId},</if>
+            <if test="isCarryover != null">is_carryover = #{isCarryover},</if>
+            <if test="sourceSemesterId != null">source_semester_id = #{sourceSemesterId},</if>
+            <if test="budgetType != null and budgetType != ''">budget_type = #{budgetType},</if>
+            <if test="budgetAmount != null">budget_amount = #{budgetAmount},</if>
+            <if test="usedAmount != null">used_amount = #{usedAmount},</if>
+            <if test="lockedAmount != null">locked_amount = #{lockedAmount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="memo != null">memo = #{memo},</if>
+            updated_at = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSemesterBudgetById" parameterType="Long">
+        delete from st_semester_budget where id = #{id}
+    </delete>
+
+    <delete id="deleteStSemesterBudgetByIds" parameterType="Long">
+        delete from st_semester_budget where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 锁定预算金额 -->
+    <!-- 注意：WHERE条件确保可用余额 >= 锁定金额，防止余额不足的情况 -->
+    <!-- 修复：确保锁定金额不为负数，使用GREATEST函数确保锁定金额 >= 0 -->
+    <!-- 修复：使用动态计算的锁定金额（实际锁定金额）进行余额检查，确保准确性 -->
+    <update id="lockBudgetAmount">
+        update st_semester_budget b
+        set locked_amount = GREATEST(COALESCE(locked_amount, 0), 0) + #{param2},
+            updated_at = NOW()
+        where b.id = #{param1}
+        and b.status != 4
+        and COALESCE(b.used_amount, 0) >= 0
+        and (
+            b.budget_amount 
+            - GREATEST(COALESCE(b.used_amount, 0), 0) 
+            - GREATEST(COALESCE((
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                WHERE r.budget_id = b.id
+                AND r.approval_status = 0
+            ), 0), 0)
+            >= #{param2}
+        )
+    </update>
+
+    <!-- 释放预算金额 -->
+    <!-- 修复：驳回时直接释放locked_amount，不检查approval_status（因为可能已被驳回） -->
+    <!-- 只验证当前locked_amount >= 释放金额即可 -->
+    <update id="releaseBudgetAmount">
+        update st_semester_budget b
+        set locked_amount = GREATEST(COALESCE(locked_amount, 0) - #{param2}, 0),
+            updated_at = NOW()
+        where b.id = #{param1}
+        and COALESCE(locked_amount, 0) >= #{param2}
+    </update>
+    
+    <!-- 审批通过时更新预算金额（锁定金额转为已使用金额）- 支持组合预算 -->
+    <!-- 使用分配明细表中的具体记录ID进行验证，确保精确匹配 -->
+    <update id="updateBudgetAmountOnApprovalForCombined">
+        update st_semester_budget b
+        set locked_amount = GREATEST(COALESCE(locked_amount, 0) - #{amount}, 0),
+            used_amount = GREATEST(COALESCE(used_amount, 0), 0) + #{amount},
+            updated_at = NOW()
+        where b.id = #{budgetId}
+        and EXISTS (
+            SELECT 1
+            FROM st_budget_allocation_detail d
+            INNER JOIN st_student_subsidy_records r ON d.subsidy_record_id = r.id
+            WHERE d.budget_id = b.id
+            AND d.subsidy_record_id = #{subsidyRecordId}
+            AND r.approval_status = 0
+            AND d.allocated_amount = #{amount}
+        )
+    </update>
+    
+    <!-- 审批通过时更新预算金额（锁定金额转为已使用金额）- 兼容旧数据 -->
+    <!-- 修复：确保锁定金额和已用金额不为负数，使用动态计算的锁定金额进行验证 -->
+    <update id="updateBudgetAmountOnApproval">
+        update st_semester_budget b
+        set locked_amount = GREATEST(COALESCE(locked_amount, 0) - #{param2}, 0),
+            used_amount = GREATEST(COALESCE(used_amount, 0), 0) + #{param2},
+            updated_at = NOW()
+        where b.id = #{param1}
+        and COALESCE((
+            SELECT COALESCE(SUM(r.subsidy_amount), 0)
+            FROM st_student_subsidy_records r
+            WHERE r.budget_id = b.id
+            AND r.approval_status = 0
+        ), 0) >= #{param2}
+    </update>
+    
+    <!-- 退回时更新预算金额（已使用金额转回可用金额）- 支持组合预算 -->
+    <!-- 使用分配明细表中的具体记录ID进行验证，确保精确匹配 -->
+    <update id="returnBudgetAmountForCombined">
+        update st_semester_budget b
+        set used_amount = GREATEST(COALESCE(used_amount, 0) - #{amount}, 0),
+            updated_at = NOW()
+        where b.id = #{budgetId}
+        and EXISTS (
+            SELECT 1
+            FROM st_budget_allocation_detail d
+            INNER JOIN st_student_subsidy_records r ON d.subsidy_record_id = r.id
+            WHERE d.budget_id = b.id
+            AND d.subsidy_record_id = #{subsidyRecordId}
+            AND r.approval_status = 1
+            AND d.allocated_amount = #{amount}
+        )
+    </update>
+    
+    <!-- 退回时更新预算金额（已使用金额转回可用金额）- 兼容旧数据 -->
+    <!-- 修复：确保已用金额不为负数，使用动态计算的已使用金额进行验证 -->
+    <update id="returnBudgetAmount">
+        update st_semester_budget b
+        set used_amount = GREATEST(COALESCE(used_amount, 0) - #{param2}, 0),
+            updated_at = NOW()
+        where b.id = #{param1}
+        and COALESCE((
+            SELECT COALESCE(SUM(r.subsidy_amount), 0)
+            FROM st_student_subsidy_records r
+            WHERE r.budget_id = b.id
+            AND r.approval_status = 1
+        ), 0) >= #{param2}
+    </update>
+    
+    <!-- 根据预算ID计算实际的锁定金额（从未审批的补助记录中汇总）
+         支持预算组合：优先使用分配明细表，如果没有分配明细则使用补助记录表 -->
+    <select id="calculateActualLockedAmount" parameterType="Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM (
+            -- 方案1：如果有分配明细，使用分配明细表（支持预算组合）
+            SELECT d.allocated_amount as amount
+            FROM st_budget_allocation_detail d
+            INNER JOIN st_student_subsidy_records r ON d.subsidy_record_id = r.id
+            WHERE d.budget_id = #{budgetId}
+            AND r.approval_status = 0
+            UNION ALL
+            -- 方案2：如果没有分配明细，使用补助记录表（兼容旧数据）
+            SELECT r.subsidy_amount as amount
+            FROM st_student_subsidy_records r
+            WHERE r.budget_id = #{budgetId}
+            AND r.approval_status = 0
+            AND NOT EXISTS (
+                SELECT 1 FROM st_budget_allocation_detail d
+                WHERE d.subsidy_record_id = r.id
+                LIMIT 1
+            )
+        ) combined
+    </select>
+    
+    <!-- 根据预算ID计算实际的已使用金额（从已审批通过的补助记录中汇总）
+         支持预算组合：优先使用分配明细表，如果没有分配明细则使用补助记录表 -->
+    <select id="calculateActualUsedAmount" parameterType="Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM (
+            -- 方案1：如果有分配明细，使用分配明细表（支持预算组合）
+            SELECT d.allocated_amount as amount
+            FROM st_budget_allocation_detail d
+            INNER JOIN st_student_subsidy_records r ON d.subsidy_record_id = r.id
+            WHERE d.budget_id = #{budgetId}
+            AND r.approval_status = 1
+            UNION ALL
+            -- 方案2：如果没有分配明细，使用补助记录表（兼容旧数据）
+            SELECT r.subsidy_amount as amount
+            FROM st_student_subsidy_records r
+            WHERE r.budget_id = #{budgetId}
+            AND r.approval_status = 1
+            AND NOT EXISTS (
+                SELECT 1 FROM st_budget_allocation_detail d
+                WHERE d.subsidy_record_id = r.id
+                LIMIT 1
+            )
+        ) combined
+    </select>
+    
+    <!-- 查询所有需要校验的预算ID列表 -->
+    <select id="selectAllBudgetIds" resultType="Long">
+        SELECT id FROM st_semester_budget
+        WHERE status != 4
+        ORDER BY id
+    </select>
+    
+    <!-- 修复预算的锁定金额（根据实际未审批记录重新计算） -->
+    <update id="fixBudgetLockedAmount" parameterType="Long">
+        UPDATE st_semester_budget b
+        SET locked_amount = (
+            SELECT COALESCE(SUM(r.subsidy_amount), 0)
+            FROM st_student_subsidy_records r
+            WHERE r.budget_id = b.id
+            AND r.approval_status = 0
+        ),
+        updated_at = NOW()
+        WHERE b.id = #{budgetId}
+    </update>
+    
+    <!-- 统计指定指标明细关联的预算数量 -->
+    <select id="countByQuotaDetailId" parameterType="Long" resultType="int">
+        SELECT COUNT(1)
+        FROM st_semester_budget
+        WHERE quota_detail_id = #{quotaDetailId}
+    </select>
+    
+    <!-- 根据指标明细和学年学期查询预算（用于累加） -->
+    <select id="selectByQuotaDetailAndSemester" resultType="com.ruoyi.system.domain.StSemesterBudget">
+        SELECT
+            id, year_semester_id, quota_id, quota_detail_id, budget_type,
+            budget_amount, used_amount, locked_amount, status, memo,
+            created_at, updated_at
+        FROM st_semester_budget
+        WHERE quota_detail_id = #{quotaDetailId}
+          AND year_semester_id = #{yearSemesterId}
+        LIMIT 1
+    </select>
+    
+    <!-- 查询与指定预算同组的预算列表（同一指标明细ID） -->
+    <select id="selectBudgetsByQuotaDetailId" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        <where>
+            and b.quota_detail_id = #{quotaDetailId}
+            <!-- 排除作废状态 -->
+            and b.status != 4
+            <!-- 筛选可用余额大于0的预算（使用动态计算的可用金额） -->
+            and (b.budget_amount - COALESCE((
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                WHERE r.budget_id = b.id
+                AND r.approval_status = 0
+            ), 0) - COALESCE((
+                SELECT COALESCE(SUM(r.subsidy_amount), 0)
+                FROM st_student_subsidy_records r
+                WHERE r.budget_id = b.id
+                AND r.approval_status = 1
+            ), 0)) > 0
+            <!-- 如果指定了当前学期ID，则只查询历史学期（用于历史结余）或当前学期 -->
+            <if test="currentSemesterId != null">
+                and (b.year_semester_id &lt;= #{currentSemesterId})
+            </if>
+        </where>
+        <!-- 优先使用历史结余预算（先使用旧资金），然后按创建时间排序 -->
+        order by b.year_semester_id asc, b.created_at asc
+    </select>
+    
+    <!-- 批量查询预算（带悲观锁，用于并发控制） -->
+    <select id="selectBudgetsByIdsForUpdate" resultMap="StSemesterBudgetResult">
+        <include refid="selectStSemesterBudgetVo"/>
+        where b.id in
+        <foreach collection="budgetIds" item="budgetId" open="(" separator="," close=")">
+            #{budgetId}
+        </foreach>
+        <!-- 按ID排序，避免死锁 -->
+        order by b.id
+        FOR UPDATE
+    </select>
+    
+    <!-- 累加预算金额 -->
+    <update id="increaseBudgetAmount">
+        update st_semester_budget
+        set budget_amount = COALESCE(budget_amount, 0) + #{delta},
+            updated_at = NOW()
+        where id = #{budgetId}
+    </update>
+</mapper>

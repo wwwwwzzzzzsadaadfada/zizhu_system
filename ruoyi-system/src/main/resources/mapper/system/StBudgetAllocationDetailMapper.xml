@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StBudgetAllocationDetailMapper">
+    
+    <resultMap type="StBudgetAllocationDetail" id="StBudgetAllocationDetailResult">
+        <result property="id"    column="id"    />
+        <result property="subsidyRecordId"    column="subsidy_record_id"    />
+        <result property="budgetId"    column="budget_id"    />
+        <result property="allocatedAmount"    column="allocated_amount"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+    </resultMap>
+
+    <sql id="selectStBudgetAllocationDetailVo">
+        select id, subsidy_record_id, budget_id, allocated_amount, created_at, updated_at
+        from st_budget_allocation_detail
+    </sql>
+
+    <select id="selectStBudgetAllocationDetailList" parameterType="StBudgetAllocationDetail" resultMap="StBudgetAllocationDetailResult">
+        <include refid="selectStBudgetAllocationDetailVo"/>
+        <where>  
+            <if test="subsidyRecordId != null "> and subsidy_record_id = #{subsidyRecordId}</if>
+            <if test="budgetId != null "> and budget_id = #{budgetId}</if>
+        </where>
+        order by id desc
+    </select>
+    
+    <select id="selectStBudgetAllocationDetailById" parameterType="Long" resultMap="StBudgetAllocationDetailResult">
+        <include refid="selectStBudgetAllocationDetailVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectBySubsidyRecordId" parameterType="Long" resultMap="StBudgetAllocationDetailResult">
+        <include refid="selectStBudgetAllocationDetailVo"/>
+        where subsidy_record_id = #{subsidyRecordId}
+        order by id
+    </select>
+    
+    <select id="selectByBudgetId" parameterType="Long" resultMap="StBudgetAllocationDetailResult">
+        <include refid="selectStBudgetAllocationDetailVo"/>
+        where budget_id = #{budgetId}
+        order by id
+    </select>
+
+    <insert id="insertStBudgetAllocationDetail" parameterType="StBudgetAllocationDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into st_budget_allocation_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="subsidyRecordId != null">subsidy_record_id,</if>
+            <if test="budgetId != null">budget_id,</if>
+            <if test="allocatedAmount != null">allocated_amount,</if>
+            <if test="createdAt != null">created_at,</if>
+            <if test="updatedAt != null">updated_at,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="subsidyRecordId != null">#{subsidyRecordId},</if>
+            <if test="budgetId != null">#{budgetId},</if>
+            <if test="allocatedAmount != null">#{allocatedAmount},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+            <if test="updatedAt != null">#{updatedAt},</if>
+         </trim>
+    </insert>
+    
+    <insert id="batchInsertStBudgetAllocationDetail" parameterType="java.util.List">
+        insert into st_budget_allocation_detail (subsidy_record_id, budget_id, allocated_amount, created_at, updated_at)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.subsidyRecordId}, #{item.budgetId}, #{item.allocatedAmount}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <update id="updateStBudgetAllocationDetail" parameterType="StBudgetAllocationDetail">
+        update st_budget_allocation_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="subsidyRecordId != null">subsidy_record_id = #{subsidyRecordId},</if>
+            <if test="budgetId != null">budget_id = #{budgetId},</if>
+            <if test="allocatedAmount != null">allocated_amount = #{allocatedAmount},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStBudgetAllocationDetailById" parameterType="Long">
+        delete from st_budget_allocation_detail where id = #{id}
+    </delete>
+
+    <delete id="deleteStBudgetAllocationDetailByIds" parameterType="String">
+        delete from st_budget_allocation_detail where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <delete id="deleteBySubsidyRecordId" parameterType="Long">
+        delete from st_budget_allocation_detail where subsidy_record_id = #{subsidyRecordId}
+    </delete>
+
+</mapper>
+
+
+
+

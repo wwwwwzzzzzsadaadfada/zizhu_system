@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.BaseConfigMapper">
+
+    <!-- ==================== 学制管理 ==================== -->
+    
+    <!-- 查询学制列表 -->
+    <select id="selectSchoolPlanList" resultType="java.util.HashMap">
+        SELECT id, name, years 
+        FROM st_schooling_plans 
+        ORDER BY id
+    </select>
+    
+    <!-- 查询学制详细 -->
+    <select id="selectSchoolPlanById" parameterType="Long" resultType="java.util.HashMap">
+        SELECT id, name, years 
+        FROM st_schooling_plans 
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 新增学制 -->
+    <insert id="insertSchoolPlan" parameterType="java.util.HashMap">
+        INSERT INTO st_schooling_plans (name, years)
+        VALUES (#{name}, #{years})
+    </insert>
+    
+    <!-- 修改学制 -->
+    <update id="updateSchoolPlan" parameterType="java.util.HashMap">
+        UPDATE st_schooling_plans
+        SET name = #{name}, years = #{years}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除学制 -->
+    <delete id="deleteSchoolPlanById" parameterType="Long">
+        DELETE FROM st_schooling_plans WHERE id = #{id}
+    </delete>
+
+    <!-- ==================== 年级管理 ==================== -->
+    
+    <!-- 查询年级列表 -->
+    <select id="selectGradeList" parameterType="Long" resultType="java.util.HashMap">
+        SELECT g.id, g.name, g.schooling_plan_id as schoolingPlanId, 
+               sp.name as schoolingPlanName
+        FROM st_grades g
+        LEFT JOIN st_schooling_plans sp ON g.schooling_plan_id = sp.id
+        <where>
+            <if test="schoolingPlanId != null">
+                AND g.schooling_plan_id = #{schoolingPlanId}
+            </if>
+        </where>
+        ORDER BY g.schooling_plan_id, g.id
+    </select>
+    
+    <!-- 查询年级详细 -->
+    <select id="selectGradeById" parameterType="Long" resultType="java.util.HashMap">
+        SELECT g.id, g.name, g.schooling_plan_id as schoolingPlanId, 
+               sp.name as schoolingPlanName
+        FROM st_grades g
+        LEFT JOIN st_schooling_plans sp ON g.schooling_plan_id = sp.id
+        WHERE g.id = #{id}
+    </select>
+    
+    <!-- 新增年级 -->
+    <insert id="insertGrade" parameterType="java.util.HashMap">
+        INSERT INTO st_grades (name, schooling_plan_id)
+        VALUES (#{name}, #{schoolingPlanId})
+    </insert>
+    
+    <!-- 修改年级 -->
+    <update id="updateGrade" parameterType="java.util.HashMap">
+        UPDATE st_grades
+        SET name = #{name}, schooling_plan_id = #{schoolingPlanId}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除年级 -->
+    <delete id="deleteGradeById" parameterType="Long">
+        DELETE FROM st_grades WHERE id = #{id}
+    </delete>
+
+    <!-- ==================== 班级管理 ==================== -->
+    
+    <!-- 查询班级列表 -->
+    <select id="selectClassList" parameterType="Long" resultType="java.util.HashMap">
+        SELECT c.class_id as classId, c.grade_id as gradeId, c.class_name as className, 
+               c.head_teacher as headTeacher, g.name as gradeName
+        FROM st_class_info c
+        LEFT JOIN st_grades g ON c.grade_id = g.id
+        <where>
+            <if test="gradeId != null">
+                AND c.grade_id = #{gradeId}
+            </if>
+        </where>
+        ORDER BY c.grade_id, c.class_id
+    </select>
+    
+    <!-- 查询班级详细 -->
+    <select id="selectClassById" parameterType="Long" resultType="java.util.HashMap">
+        SELECT c.class_id as classId, c.grade_id as gradeId, c.class_name as className, 
+               c.head_teacher as headTeacher, g.name as gradeName
+        FROM st_class_info c
+        LEFT JOIN st_grades g ON c.grade_id = g.id
+        WHERE c.class_id = #{classId}
+    </select>
+    
+    <!-- 新增班级 -->
+    <insert id="insertClass" parameterType="java.util.HashMap">
+        INSERT INTO st_class_info (grade_id, class_name, head_teacher)
+        VALUES (#{gradeId}, #{className}, #{headTeacher})
+    </insert>
+    
+    <!-- 修改班级 -->
+    <update id="updateClass" parameterType="java.util.HashMap">
+        UPDATE st_class_info
+        SET grade_id = #{gradeId}, class_name = #{className}, head_teacher = #{headTeacher}
+        WHERE class_id = #{classId}
+    </update>
+    
+    <!-- 删除班级 -->
+    <delete id="deleteClassById" parameterType="Long">
+        DELETE FROM st_class_info WHERE class_id = #{classId}
+    </delete>
+
+</mapper>

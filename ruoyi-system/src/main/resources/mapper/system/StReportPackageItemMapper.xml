@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportPackageItemMapper">
+    
+    <resultMap type="StReportPackageItem" id="StReportPackageItemResult">
+        <result property="id" column="id" />
+        <result property="packageId" column="package_id" />
+        <result property="reportPdfId" column="report_pdf_id" />
+        <result property="fileName" column="file_name" />
+        <result property="filePath" column="file_path" />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <sql id="selectStReportPackageItemVo">
+        select id, package_id, report_pdf_id, file_name, file_path, create_time
+        from st_report_package_item
+    </sql>
+
+    <select id="selectStReportPackageItemList" parameterType="StReportPackageItem" resultMap="StReportPackageItemResult">
+        <include refid="selectStReportPackageItemVo"/>
+        <where>  
+            <if test="packageId != null"> and package_id = #{packageId}</if>
+            <if test="reportPdfId != null"> and report_pdf_id = #{reportPdfId}</if>
+        </where>
+        order by create_time
+    </select>
+    
+    <select id="selectStReportPackageItemById" parameterType="Long" resultMap="StReportPackageItemResult">
+        <include refid="selectStReportPackageItemVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectStReportPackageItemListByPackageId" parameterType="Long" resultMap="StReportPackageItemResult">
+        <include refid="selectStReportPackageItemVo"/>
+        where package_id = #{packageId}
+        order by create_time
+    </select>
+        
+    <insert id="insertStReportPackageItem" parameterType="StReportPackageItem" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_package_item
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="packageId != null">package_id,</if>
+            <if test="reportPdfId != null">report_pdf_id,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="filePath != null">file_path,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="packageId != null">#{packageId},</if>
+            <if test="reportPdfId != null">#{reportPdfId},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="filePath != null">#{filePath},</if>
+            now()
+        </trim>
+    </insert>
+
+    <insert id="batchInsertStReportPackageItem" parameterType="java.util.List">
+        insert into st_report_package_item (package_id, report_pdf_id, file_name, file_path, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.packageId}, #{item.reportPdfId}, #{item.fileName}, #{item.filePath}, now())
+        </foreach>
+    </insert>
+
+    <update id="updateStReportPackageItem" parameterType="StReportPackageItem">
+        update st_report_package_item
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="packageId != null">package_id = #{packageId},</if>
+            <if test="reportPdfId != null">report_pdf_id = #{reportPdfId},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="filePath != null">file_path = #{filePath},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportPackageItemById" parameterType="Long">
+        delete from st_report_package_item where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportPackageItemByPackageId" parameterType="Long">
+        delete from st_report_package_item where package_id = #{packageId}
+    </delete>
+
+    <delete id="deleteStReportPackageItemByIds" parameterType="String">
+        delete from st_report_package_item where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+

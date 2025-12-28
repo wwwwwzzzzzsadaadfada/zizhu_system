@@ -1,0 +1,71 @@
+    <!-- 同步所有学生数据到受助学生信息表 -->
+    <insert id="syncAllStudentsToAidedTable">
+        INSERT INTO st_aided_student_info (
+            student_id,
+            student_no,
+            student_name,
+            id_card,
+            gender,
+            nation,
+            grade,
+            clazz_name,
+            difficulty_type_id,
+            difficulty_level_id,
+            academic_year,
+            semester,
+            create_time
+        )
+        SELECT 
+            sb.id as student_id,
+            sb.student_no,
+            sb.name as student_name,
+            sb.id_card_no as id_card,
+            CASE 
+                WHEN sb.gender = '男' THEN '1'
+                WHEN sb.gender = '女' THEN '2'
+                WHEN sb.gender = '1' THEN '1'
+                WHEN sb.gender = '2' THEN '2'
+                ELSE '0'  -- 未知
+            END as gender,
+            sb.ethnicity as nation,
+            g.name as grade,
+            c.class_name as clazz_name,
+            CASE 
+                WHEN ssr.difficulty_type_id IS NOT NULL AND ssr.difficulty_type_id != '' THEN ssr.difficulty_type_id
+                WHEN sb.difficulty_type_id IS NOT NULL AND sb.difficulty_type_id != '' THEN sb.difficulty_type_id
+                ELSE NULL
+            END as difficulty_type_id,
+            CASE 
+                WHEN ssr.difficulty_level_id IS NOT NULL AND ssr.difficulty_level_id != '' THEN ssr.difficulty_level_id
+                WHEN sb.difficulty_level_id IS NOT NULL AND sb.difficulty_level_id != '' THEN sb.difficulty_level_id
+                ELSE NULL
+            END as difficulty_level_id,
+            #{academicYear} as academic_year,
+            #{semester} as semester,
+            NOW() as create_time
+        FROM st_students_base sb
+        LEFT JOIN st_student_semester_records ssr ON sb.id = ssr.student_base_id 
+            AND ssr.year_semester_id = (
+                SELECT id FROM st_school_year_semester 
+                WHERE school_year = #{academicYear} 
+                AND semester = CASE 
+                    WHEN #{semester} = '第一学期' OR #{semester} = '1' THEN 1 
+                    WHEN #{semester} = '第二学期' OR #{semester} = '2' THEN 2 
+                    ELSE 1 
+                END
+                LIMIT 1
+            )
+        LEFT JOIN st_grades g ON ssr.grade_id = g.id
+        LEFT JOIN st_class_info c ON ssr.class_id = c.class_id
+        ON DUPLICATE KEY UPDATE
+            student_no = VALUES(student_no),
+            student_name = VALUES(student_name),
+            id_card = VALUES(id_card),
+            gender = VALUES(gender),
+            nation = VALUES(nation),
+            grade = VALUES(grade),
+            clazz_name = VALUES(clazz_name),
+            difficulty_type_id = VALUES(difficulty_type_id),
+            difficulty_level_id = VALUES(difficulty_level_id),
+            update_time = NOW()
+    </insert>

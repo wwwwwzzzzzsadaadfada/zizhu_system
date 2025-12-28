@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StFamilyMemberMapper">
+
+    <resultMap id="StFamilyMemberResult" type="StFamilyMember">
+        <id     property="id" column="id" />
+        <result property="studentId" column="student_id" />
+        <result property="yearSemesterId" column="year_semester_id" />
+        <result property="name" column="name" />
+        <result property="age" column="age" />
+        <result property="relation" column="relation" />
+        <result property="employer" column="employer" />
+        <result property="occupation" column="occupation" />
+        <result property="healthStatus" column="health_status" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+        <result property="createdBy" column="created_by" />
+        <result property="updatedBy" column="updated_by" />
+    </resultMap>
+
+    <sql id="selectStFamilyMemberVo">
+        select
+            id, student_id, year_semester_id, name, age, relation, employer, occupation, health_status,
+            created_at, updated_at, created_by, updated_by
+        from st_family_members
+    </sql>
+
+    <select id="selectStFamilyMemberById" parameterType="Long" resultMap="StFamilyMemberResult">
+        <include refid="selectStFamilyMemberVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectStFamilyMemberList" parameterType="StFamilyMember" resultMap="StFamilyMemberResult">
+        <include refid="selectStFamilyMemberVo"/>
+        <where>
+            <if test="studentId != null">and student_id = #{studentId}</if>
+            <if test="yearSemesterId != null">and year_semester_id = #{yearSemesterId}</if>
+            <if test="name != null and name != ''">and name like concat('%', #{name}, '%')</if>
+            <if test="relation != null and relation != ''">and relation = #{relation}</if>
+            <if test="healthStatus != null and healthStatus != ''">and health_status = #{healthStatus}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <insert id="insertStFamilyMember" parameterType="StFamilyMember" useGeneratedKeys="true" keyProperty="id">
+        insert into st_family_members
+        (student_id, year_semester_id, name, age, relation, employer, occupation, health_status, created_at, updated_at, created_by, updated_by)
+        values
+        (#{studentId}, #{yearSemesterId}, #{name}, #{age}, #{relation}, #{employer}, #{occupation}, #{healthStatus},
+         now(), now(), #{createBy}, #{updateBy})
+    </insert>
+
+    <update id="updateStFamilyMember" parameterType="StFamilyMember">
+        update st_family_members
+        set student_id = #{studentId},
+            year_semester_id = #{yearSemesterId},
+            name = #{name},
+            age = #{age},
+            relation = #{relation},
+            employer = #{employer},
+            occupation = #{occupation},
+            health_status = #{healthStatus},
+            updated_at = now(),
+            updated_by = #{updateBy}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStFamilyMemberById" parameterType="Long">
+        delete from st_family_members where id = #{id}
+    </delete>
+
+    <delete id="deleteStFamilyMemberByIds" parameterType="Long">
+        delete from st_family_members where id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByStudentId" parameterType="Long">
+        delete from st_family_members where student_id = #{studentId}
+    </delete>
+
+</mapper>
+
+

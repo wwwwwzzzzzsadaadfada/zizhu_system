@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentSemesterRecordMapper">
+    
+    <resultMap type="StStudentSemesterRecord" id="StStudentSemesterRecordResult">
+        <id property="id"    column="id"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />
+        <result property="studentBaseId"    column="student_base_id"    />
+        <result property="gender"    column="gender"    />
+        <result property="schoolingPlanId"    column="schooling_plan_id"    />
+        <result property="gradeId"    column="grade_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="studyStatus"    column="study_status"    />
+        <result property="difficultyTypeId"    column="difficulty_type_id"    />
+        <result property="difficultyLevelId"    column="difficulty_level_id"    />
+        <result property="povertyReliefYear"    column="poverty_relief_year"    />
+        <result property="budgetId"    column="budget_id"    />
+        <result property="quotaId"    column="quota_id"    />
+        <result property="quotaDetailId"    column="quota_detail_id"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="subsidyAmount"    column="subsidy_amount"    />
+        <result property="approvalStatus"    column="approval_status"    />
+        <result property="memo"    column="memo"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+        <!-- 扩展字段 -->
+        <result property="schoolYear"    column="school_year"    />
+        <result property="semester"    column="semester"    />
+        <result property="name"    column="student_name"    />
+        <result property="idCardNo"    column="id_card_no"    />
+        <result property="ethnicity"    column="ethnicity"    />
+        <result property="domicile"    column="domicile"    />
+        <result property="studentNo"    column="student_no"    />
+        <result property="schoolingPlanName"    column="schooling_plan_name"    />
+        <result property="schoolingYears"    column="schooling_years"    />
+        <result property="gradeName"    column="grade_name"    />
+        <result property="className"    column="class_name"    />
+        <result property="budgetName"    column="budget_type"    />
+        <result property="quotaName"    column="quota_doc_no"    />
+        <result property="budgetType"    column="budget_type"    />
+        <result property="budgetProjectName"    column="budget_project_name"    />
+    </resultMap>
+    
+    <!-- 已弃用：st_student_semester_records 表不存在，相关查询移除以避免 SQL 报错 -->
+    <sql id="selectStStudentSemesterRecordVo">
+        /* table st_student_semester_records is not used */
+        select 1
+    </sql>
+
+    <select id="selectStStudentSemesterRecordList" parameterType="StStudentSemesterRecord" resultMap="StStudentSemesterRecordResult">
+        select 1 from dual where 1 = 0
+    </select>
+
+    <select id="selectStStudentSemesterRecordById" parameterType="Long" resultMap="StStudentSemesterRecordResult">
+        select 1 from dual where 1 = 0
+    </select>
+    
+    <insert id="insertStStudentSemesterRecord" parameterType="StStudentSemesterRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into st_student_semester_records
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="studentBaseId != null">student_base_id,</if>
+            <if test="gender != null and gender != ''">gender,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="studyStatus != null and studyStatus != ''">study_status,</if>
+            <if test="difficultyTypeId != null and difficultyTypeId != ''">difficulty_type_id,</if>
+            <if test="difficultyLevelId != null and difficultyLevelId != ''">difficulty_level_id,</if>
+            <if test="povertyReliefYear != null">poverty_relief_year,</if>
+            <if test="budgetId != null">budget_id,</if>
+            <if test="quotaId != null">quota_id,</if>
+            <if test="quotaDetailId != null">quota_detail_id,</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category,</if>
+            <if test="subsidyAmount != null">subsidy_amount,</if>
+            <if test="approvalStatus != null">approval_status,</if>
+            <if test="memo != null and memo != ''">memo,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="studentBaseId != null">#{studentBaseId},</if>
+            <if test="gender != null and gender != ''">#{gender},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="studyStatus != null and studyStatus != ''">#{studyStatus},</if>
+            <if test="difficultyTypeId != null and difficultyTypeId != ''">#{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null and difficultyLevelId != ''">#{difficultyLevelId},</if>
+            <if test="povertyReliefYear != null">#{povertyReliefYear},</if>
+            <if test="budgetId != null">#{budgetId},</if>
+            <if test="quotaId != null">#{quotaId},</if>
+            <if test="quotaDetailId != null">#{quotaDetailId},</if>
+            <if test="economyCategory != null and economyCategory != ''">#{economyCategory},</if>
+            <if test="subsidyAmount != null">#{subsidyAmount},</if>
+            <if test="approvalStatus != null">#{approvalStatus},</if>
+            <if test="memo != null and memo != ''">#{memo},</if>
+        </trim>
+    </insert>
+    
+    <update id="updateStStudentSemesterRecord" parameterType="StStudentSemesterRecord">
+        update st_student_semester_records
+        <trim prefix="set" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="studentBaseId != null">student_base_id = #{studentBaseId},</if>
+            <if test="gender != null and gender != ''">gender = #{gender},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="studyStatus != null and studyStatus != ''">study_status = #{studyStatus},</if>
+            <if test="difficultyTypeId != null and difficultyTypeId != ''">difficulty_type_id = #{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null and difficultyLevelId != ''">difficulty_level_id = #{difficultyLevelId},</if>
+            <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
+            <if test="budgetId != null">budget_id = #{budgetId},</if>
+            <if test="quotaId != null">quota_id = #{quotaId},</if>
+            <if test="quotaDetailId != null">quota_detail_id = #{quotaDetailId},</if>
+            <if test="economyCategory != null and economyCategory != ''">economy_category = #{economyCategory},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            <if test="approvalStatus != null">approval_status = #{approvalStatus},</if>
+            <if test="memo != null and memo != ''">memo = #{memo},</if>
+            updated_at = NOW()
+        </trim>
+        where id = #{id}
+    </update>
+    
+    <delete id="deleteStStudentSemesterRecordById" parameterType="Long">
+        delete from st_student_semester_records where id = #{id}
+    </delete>
+    
+    <delete id="deleteStStudentSemesterRecordByIds" parameterType="Long">
+        delete from st_student_semester_records where id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 查询学制/年级/班级配置 -->
+    <select id="selectSchoolPlanList" resultType="java.util.HashMap">
+        select id, name, years from st_schooling_plans order by id
+    </select>
+    
+    <select id="selectGradeListByPlanId" parameterType="Long" resultType="java.util.HashMap">
+        select id, name, schooling_plan_id as schoolingPlanId
+        from st_grades
+        where schooling_plan_id = #{schoolingPlanId}
+        order by id
+    </select>
+    
+    <select id="selectClassListByGradeId" parameterType="Long" resultType="java.util.HashMap">
+        select class_id as classId, class_name as className, grade_id as gradeId, head_teacher as headTeacher
+        from st_class_info
+        where grade_id = #{gradeId}
+        order by class_id
+    </select>
+    
+    <!-- 同步学生到当前学期记录 -->
+    <insert id="syncStudentsToSemesterRecords" parameterType="Long">
+        INSERT INTO st_student_semester_records (
+            year_semester_id,
+            student_base_id,
+            gender,
+            schooling_plan_id,
+            grade_id,
+            class_id,
+            study_status,
+            difficulty_type_id,
+            difficulty_level_id,
+            poverty_relief_year,
+            approval_status,
+            created_at,
+            updated_at
+        )
+        SELECT
+            #{yearSemesterId} as year_semester_id,
+            sb.id as student_base_id,
+            sb.gender,
+            COALESCE(sb.schooling_plan_id, 1) as schooling_plan_id,
+            COALESCE(sb.grade_id, 1) as grade_id,
+            COALESCE(sb.class_id, 1) as class_id,
+            '1' as study_status,
+            sb.difficulty_type_id,
+            sb.difficulty_level_id,
+            NULL as poverty_relief_year,
+            1 as approval_status,
+            NOW(),
+            NOW()
+        FROM st_students_base sb
+        WHERE NOT EXISTS (
+            SELECT 1 FROM st_student_semester_records existing
+            WHERE existing.student_base_id = sb.id
+              AND existing.year_semester_id = #{yearSemesterId}
+        )
+    </insert>
+    
+    <!-- 同步单个学生到受助学生信息表 -->
+    <insert id="syncStudentToAidedTable">
+        INSERT INTO st_aided_student_info (
+            student_id,
+            student_no,
+            student_name,
+            id_card,
+            gender,
+            nation,
+            nation_name,
+            grade,
+            clazz_name,
+            difficulty_type_id,
+            difficulty_level_id,
+            is_poverty_relief_family,
+            poverty_relief_year,
+            academic_year,
+            semester,
+            create_time
+        )
+        SELECT 
+            sb.id as student_id,
+            sb.student_no,
+            sb.name as student_name,
+            sb.id_card_no as id_card,
+            CASE 
+                WHEN sb.gender = '男' THEN '1'
+                WHEN sb.gender = '女' THEN '2'
+                WHEN sb.gender = '1' THEN '1'
+                WHEN sb.gender = '2' THEN '2'
+                ELSE '0'
+            END as gender,
+            sb.ethnicity as nation,
+            COALESCE(dict_eth.dict_label, sb.ethnicity) as nation_name,
+            base_g.name as grade,
+            base_c.class_name as clazz_name,
+            sb.difficulty_type_id as difficulty_type_id,
+            sb.difficulty_level_id as difficulty_level_id,
+            sb.is_poverty_relief_family as is_poverty_relief_family,
+            sb.poverty_relief_year as poverty_relief_year,
+            #{academicYear} as academic_year,
+            #{semester} as semester,
+            NOW() as create_time
+        FROM st_students_base sb
+        LEFT JOIN st_grades base_g ON sb.grade_id = base_g.id
+        LEFT JOIN st_class_info base_c ON sb.class_id = base_c.class_id
+        LEFT JOIN sys_dict_data dict_eth ON dict_eth.dict_type = 'sys_student_ethnicity' AND dict_eth.dict_value = sb.ethnicity
+        WHERE sb.id = #{studentBaseId}
+        ON DUPLICATE KEY UPDATE
+            student_no = VALUES(student_no),
+            student_name = VALUES(student_name),
+            id_card = VALUES(id_card),
+            gender = VALUES(gender),
+            nation = VALUES(nation),
+            nation_name = VALUES(nation_name),
+            grade = VALUES(grade),
+            clazz_name = VALUES(clazz_name),
+            difficulty_type_id = VALUES(difficulty_type_id),
+            difficulty_level_id = VALUES(difficulty_level_id),
+            is_poverty_relief_family = VALUES(is_poverty_relief_family),
+            poverty_relief_year = VALUES(poverty_relief_year),
+            update_time = NOW()
+    </insert>
+    
+    <!-- 更新已存在的受助学生学期字段 -->
+    <update id="updateExistingStudentsInAidedTable">
+        UPDATE st_aided_student_info asi
+        INNER JOIN (
+            SELECT 
+                sb.id as student_id,
+                sb.student_no as student_no,
+                sb.name as student_name,
+                sb.id_card_no as id_card,
+                CASE 
+                    WHEN sb.gender = '男' THEN '1'
+                    WHEN sb.gender = '女' THEN '2'
+                    WHEN sb.gender = '1' THEN '1'
+                    WHEN sb.gender = '2' THEN '2'
+                    ELSE '0'
+                END as gender,
+                sb.ethnicity as nation,
+                COALESCE(dict_eth.dict_label, sb.ethnicity) as nation_name,
+                base_g.name as grade,
+                base_c.class_name as clazz_name,
+                sb.difficulty_type_id as difficulty_type_id,
+                sb.difficulty_level_id as difficulty_level_id,
+                sb.is_poverty_relief_family as is_poverty_relief_family,
+                sb.poverty_relief_year as poverty_relief_year
+            FROM st_students_base sb
+            LEFT JOIN st_grades base_g ON sb.grade_id = base_g.id
+            LEFT JOIN st_class_info base_c ON sb.class_id = base_c.class_id
+            LEFT JOIN sys_dict_data dict_eth ON dict_eth.dict_type = 'sys_student_ethnicity' AND dict_eth.dict_value = sb.ethnicity
+        ) src ON asi.student_id = src.student_id
+        SET 
+            asi.student_no = COALESCE(src.student_no, asi.student_no),
+            asi.student_name = COALESCE(src.student_name, asi.student_name),
+            asi.id_card = COALESCE(src.id_card, asi.id_card),
+            asi.gender = COALESCE(src.gender, asi.gender),
+            asi.nation = COALESCE(src.nation, asi.nation),
+            asi.nation_name = COALESCE(src.nation_name, asi.nation_name),
+            asi.grade = src.grade,
+            asi.clazz_name = src.clazz_name,
+            asi.difficulty_type_id = src.difficulty_type_id,
+            asi.difficulty_level_id = src.difficulty_level_id,
+            asi.is_poverty_relief_family = src.is_poverty_relief_family,
+            asi.poverty_relief_year = src.poverty_relief_year,
+            asi.update_time = NOW()
+        WHERE asi.academic_year = #{academicYear} AND asi.semester = #{semester}
+    </update>
+    
+    <!-- 同步所有学生数据到受助学生信息表 -->
+    <insert id="syncAllStudentsToAidedTable">
+        INSERT INTO st_aided_student_info (
+            student_id,
+            student_no,
+            student_name,
+            id_card,
+            gender,
+            nation,
+            nation_name,
+            grade,
+            clazz_name,
+            difficulty_type_id,
+            difficulty_level_id,
+            is_poverty_relief_family,
+            poverty_relief_year,
+            academic_year,
+            semester,
+            create_time
+        )
+        SELECT 
+            sb.id as student_id,
+            sb.student_no,
+            sb.name as student_name,
+            sb.id_card_no as id_card,
+            CASE 
+                WHEN sb.gender = '男' THEN '1'
+                WHEN sb.gender = '女' THEN '2'
+                WHEN sb.gender = '1' THEN '1'
+                WHEN sb.gender = '2' THEN '2'
+                ELSE '0'
+            END as gender,
+            sb.ethnicity as nation,
+            COALESCE(dict_eth.dict_label, sb.ethnicity) as nation_name,
+            base_g.name as grade,
+            base_c.class_name as clazz_name,
+            sb.difficulty_type_id as difficulty_type_id,
+            sb.difficulty_level_id as difficulty_level_id,
+            sb.is_poverty_relief_family as is_poverty_relief_family,
+            sb.poverty_relief_year as poverty_relief_year,
+            #{academicYear} as academic_year,
+            #{semester} as semester,
+            NOW() as create_time
+        FROM st_students_base sb
+        LEFT JOIN st_grades base_g ON sb.grade_id = base_g.id
+        LEFT JOIN st_class_info base_c ON sb.class_id = base_c.class_id
+        LEFT JOIN sys_dict_data dict_eth ON dict_eth.dict_type = 'sys_student_ethnicity' AND dict_eth.dict_value = sb.ethnicity
+        WHERE NOT EXISTS (
+            SELECT 1 FROM st_aided_student_info asi 
+            WHERE asi.student_id = sb.id 
+            AND asi.academic_year = #{academicYear} 
+            AND asi.semester = #{semester}
+        )
+    </insert>
+    
+    <!-- 检查学生是否已存在受助信息 -->
+    <select id="checkAidedStudentExists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM st_aided_student_info
+        WHERE student_id = #{studentBaseId}
+        AND academic_year = #{academicYear}
+        AND semester = #{semester}
+    </select>
+    
+    <!-- 根据学生ID和学年学期ID查询学期记录 -->
+    <select id="selectByStudentIdAndYearSemesterId" resultMap="StStudentSemesterRecordResult">
+        <include refid="selectStStudentSemesterRecordVo"/>
+        where ssr.student_base_id = #{studentBaseId}
+        and ssr.year_semester_id = #{yearSemesterId}
+        limit 1
+    </select>
+</mapper>

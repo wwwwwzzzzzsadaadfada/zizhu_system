@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyPackageMapper">
+    
+    <resultMap type="StSubsidyPackage" id="StSubsidyPackageResult">
+        <result property="id"    column="id"    />
+        <result property="schoolingPlanId"    column="schooling_plan_id"    />
+        <result property="packageName"    column="package_name"    />
+        <result property="packageType"    column="package_type"    />
+        <result property="subsidyAmount"    column="subsidy_amount"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="sortOrder"    column="sort_order"    />
+        <result property="status"    column="status"    />
+        <result property="memo"    column="memo"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+    </resultMap>
+
+    <sql id="selectStSubsidyPackageVo">
+        select id, schooling_plan_id, package_name, package_type,
+               subsidy_amount, economy_category, sort_order, status, memo,
+               created_at, updated_at
+        from st_subsidy_package
+    </sql>
+
+    <select id="selectStSubsidyPackageList" parameterType="StSubsidyPackage" resultMap="StSubsidyPackageResult">
+        <include refid="selectStSubsidyPackageVo"/>
+        <where>
+            <if test="schoolingPlanId != null">and schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="packageName != null and packageName != ''">and package_name like concat('%', #{packageName}, '%')</if>
+            <if test="packageType != null and packageType != ''">and package_type = #{packageType}</if>
+            <if test="economyCategory != null and economyCategory != ''">and economy_category = #{economyCategory}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+        order by schooling_plan_id asc, sort_order asc, created_at desc
+    </select>
+
+    <select id="selectStSubsidyPackageById" parameterType="Long" resultMap="StSubsidyPackageResult">
+        <include refid="selectStSubsidyPackageVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectAvailablePackagesBySchoolingPlan" parameterType="Long" resultMap="StSubsidyPackageResult">
+        <include refid="selectStSubsidyPackageVo"/>
+        where schooling_plan_id = #{schoolingPlanId}
+          and status = 1
+        order by sort_order asc, created_at desc
+    </select>
+
+    <select id="selectBySchoolingPlanAndType" resultMap="StSubsidyPackageResult">
+        <include refid="selectStSubsidyPackageVo"/>
+        where schooling_plan_id = #{schoolingPlanId}
+          and package_type = #{packageType}
+          and status = 1
+        order by sort_order asc, created_at desc
+    </select>
+
+    <insert id="insertStSubsidyPackage" parameterType="StSubsidyPackage" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_package
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="packageName != null">package_name,</if>
+            <if test="packageType != null">package_type,</if>
+            <if test="subsidyAmount != null">subsidy_amount,</if>
+            <if test="economyCategory != null">economy_category,</if>
+            <if test="sortOrder != null">sort_order,</if>
+            <if test="status != null">status,</if>
+            <if test="memo != null">memo,</if>
+            created_at
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="packageName != null">#{packageName},</if>
+            <if test="packageType != null">#{packageType},</if>
+            <if test="subsidyAmount != null">#{subsidyAmount},</if>
+            <if test="economyCategory != null">#{economyCategory},</if>
+            <if test="sortOrder != null">#{sortOrder},</if>
+            <if test="status != null">#{status},</if>
+            <if test="memo != null">#{memo},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateStSubsidyPackage" parameterType="StSubsidyPackage">
+        update st_subsidy_package
+        <trim prefix="set" suffixOverrides=",">
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="packageName != null">package_name = #{packageName},</if>
+            <if test="packageType != null">package_type = #{packageType},</if>
+            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
+            <if test="economyCategory != null">economy_category = #{economyCategory},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="memo != null">memo = #{memo},</if>
+            updated_at = NOW(),
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyPackageById" parameterType="Long">
+        delete from st_subsidy_package where id = #{id}
+    </delete>
+
+    <delete id="deleteStSubsidyPackageByIds" parameterType="Long">
+        delete from st_subsidy_package where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
+
+

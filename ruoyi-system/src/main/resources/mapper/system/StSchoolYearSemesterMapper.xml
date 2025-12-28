@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSchoolYearSemesterMapper">
+    
+    <resultMap type="StSchoolYearSemester" id="StSchoolYearSemesterResult">
+        <result property="id"    column="id"    />
+        <result property="schoolYear"    column="school_year"    />
+        <result property="semester"    column="semester"    />
+        <result property="startDate"    column="start_date"    />
+        <result property="endDate"    column="end_date"    />
+        <result property="status"    column="status"    />
+        <result property="isCurrent"    column="is_current"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="updatedAt"    column="updated_at"    />
+        <!-- 学期中文名称：后端统一返回，前端只展示 -->
+        <result property="semesterLabel"    column="semester_label"    />
+    </resultMap>
+
+    <sql id="selectStSchoolYearSemesterVo">
+        select 
+            id, 
+            school_year, 
+            semester, 
+            start_date, 
+            end_date, 
+            status, 
+            is_current, 
+            created_at, 
+            updated_at,
+            CASE 
+                WHEN semester = 1 THEN '秋季学期'
+                WHEN semester = 2 THEN '春季学期'
+                ELSE null
+            END as semester_label
+        from st_school_year_semester
+    </sql>
+
+    <select id="selectStSchoolYearSemesterList" parameterType="StSchoolYearSemester" resultMap="StSchoolYearSemesterResult">
+        <include refid="selectStSchoolYearSemesterVo"/>
+        <where>  
+            <if test="schoolYear != null and schoolYear != ''">and school_year = #{schoolYear}</if>
+            <if test="semester != null">and semester = #{semester}</if>
+            <if test="status != null">and status = #{status}</if>
+            <if test="isCurrent != null">and is_current = #{isCurrent}</if>
+        </where>
+        order by school_year desc, semester desc
+    </select>
+    
+    <select id="selectStSchoolYearSemesterById" parameterType="Long" resultMap="StSchoolYearSemesterResult">
+        <include refid="selectStSchoolYearSemesterVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectCurrentSemester" resultMap="StSchoolYearSemesterResult">
+        <include refid="selectStSchoolYearSemesterVo"/>
+        where is_current = 1
+        <if test="!ignorePage">
+            limit 1
+        </if>
+    </select>
+
+    <insert id="insertStSchoolYearSemester" parameterType="StSchoolYearSemester" useGeneratedKeys="true" keyProperty="id">
+        insert into st_school_year_semester
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="schoolYear != null and schoolYear != ''">school_year,</if>
+            <if test="semester != null">semester,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="status != null">status,</if>
+            <if test="isCurrent != null">is_current,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="schoolYear != null and schoolYear != ''">#{schoolYear},</if>
+            <if test="semester != null">#{semester},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="isCurrent != null">#{isCurrent},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStSchoolYearSemester" parameterType="StSchoolYearSemester">
+        update st_school_year_semester
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="schoolYear != null and schoolYear != ''">school_year = #{schoolYear},</if>
+            <if test="semester != null">semester = #{semester},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="isCurrent != null">is_current = #{isCurrent},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="cancelAllCurrent">
+        update st_school_year_semester set is_current = 0 where is_current = 1
+    </update>
+
+    <update id="setCurrentSemester" parameterType="Long">
+        update st_school_year_semester set is_current = 1 where id = #{id}
+    </update>
+
+    <delete id="deleteStSchoolYearSemesterById" parameterType="Long">
+        delete from st_school_year_semester where id = #{id}
+    </delete>
+
+    <delete id="deleteStSchoolYearSemesterByIds" parameterType="Long">
+        delete from st_school_year_semester where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 根据学年和学期查询学年学期记录 -->
+    <select id="selectBySchoolYearAndSemester" resultMap="StSchoolYearSemesterResult">
+        <include refid="selectStSchoolYearSemesterVo"/>
+        where school_year = #{schoolYear} and semester = #{semester}
+        limit 1
+    </select>
+</mapper>

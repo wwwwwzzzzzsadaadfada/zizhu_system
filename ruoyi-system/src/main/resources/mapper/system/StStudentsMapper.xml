@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StStudentsMapper">
+    
+    <resultMap type="StStudents" id="StStudentsResult">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="idCardNo" column="id_card_no"/>
+        <result property="gender" column="gender"/>
+        <result property="ethnicity" column="ethnicity"/>
+        <result property="domicile" column="domicile"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="schoolingPlanId" column="schooling_plan_id"/>
+        <result property="schoolingPlanName" column="schooling_plan_name"/>
+        <result property="schoolingYears" column="schooling_years"/>
+        <result property="gradeId" column="grade_id"/>
+        <result property="gradeName" column="grade_name"/>
+        <result property="classId" column="class_id"/>
+        <result property="className" column="class_name"/>
+        <result property="currentYearSemesterId" column="current_year_semester_id"/>
+        <result property="currentSchoolYear" column="current_school_year"/>
+        <result property="currentSemester" column="current_semester"/>
+        <result property="currentSemesterLabel" column="current_semester_label"/>
+        <result property="studyStatus" column="study_status"/>
+        <result property="difficultyTypeId" column="difficulty_type_id"/>
+        <result property="difficultyLevelId" column="difficulty_level_id"/>
+        <result property="isPovertyReliefFamily" column="is_poverty_relief_family"/>
+        <result property="povertyReliefYear" column="poverty_relief_year"/>
+        <result property="memo" column="memo"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="selectStStudentsVo">
+        select 
+            s.id,
+            s.name,
+            s.id_card_no,
+            s.gender,
+            s.ethnicity,
+            s.domicile,
+            s.student_no,
+            s.schooling_plan_id,
+            sp.name as schooling_plan_name,
+            sp.years as schooling_years,
+            s.grade_id,
+            g.name as grade_name,
+            s.class_id,
+            c.class_name,
+            s.current_year_semester_id,
+            ysem.school_year as current_school_year,
+            ysem.semester as current_semester,
+            CASE 
+                WHEN ysem.semester = 1 THEN '秋季学期'
+                WHEN ysem.semester = 2 THEN '春季学期'
+                ELSE null
+            END as current_semester_label,
+            s.study_status,
+            s.difficulty_type_id,
+            s.difficulty_level_id,
+            s.is_poverty_relief_family,
+            s.poverty_relief_year,
+            s.memo,
+            s.created_at,
+            s.updated_at
+        from st_students_base s
+        left join st_schooling_plans sp on s.schooling_plan_id = sp.id
+        left join st_grades g on s.grade_id = g.id
+        left join st_class_info c on s.class_id = c.class_id
+        left join st_school_year_semester ysem on s.current_year_semester_id = ysem.id
+    </sql>
+
+    <select id="selectStStudentsList" parameterType="StStudents" resultMap="StStudentsResult">
+        <include refid="selectStStudentsVo"/>
+        <where>  
+            <if test="name != null  and name != ''"> and s.name like concat('%', #{name}, '%')</if>
+            <if test="idCardNo != null  and idCardNo != ''"> and s.id_card_no = #{idCardNo}</if>
+            <if test="gender != null  and gender != ''"> and s.gender = #{gender}</if>
+            <if test="ethnicity != null  and ethnicity != ''"> and s.ethnicity = #{ethnicity}</if>
+            <if test="domicile != null  and domicile != ''"> and s.domicile = #{domicile}</if>
+            <if test="studentNo != null  and studentNo != ''"> and s.student_no = #{studentNo}</if>
+            <if test="schoolingPlanId != null"> and s.schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null"> and s.grade_id = #{gradeId}</if>
+            <if test="classId != null"> and s.class_id = #{classId}</if>
+            <!-- 如果指定了学期ID，则只查询该学期的学生；如果未指定，则查询所有学生（兼容旧数据） -->
+            <if test="currentYearSemesterId != null"> 
+                and (s.current_year_semester_id = #{currentYearSemesterId} OR s.current_year_semester_id IS NULL)
+            </if>
+            <if test="studyStatus != null and studyStatus != ''"> and s.study_status = #{studyStatus}</if>
+            <if test="difficultyTypeId != null  and difficultyTypeId != ''"> and s.difficulty_type_id = #{difficultyTypeId}</if>
+            <if test="difficultyLevelId != null  and difficultyLevelId != ''"> and s.difficulty_level_id = #{difficultyLevelId}</if>
+            <if test="isPovertyReliefFamily != null  and isPovertyReliefFamily != ''"> and s.is_poverty_relief_family = #{isPovertyReliefFamily}</if>
+            <if test="createdAt != null "> and s.created_at = #{createdAt}</if>
+            <if test="updatedAt != null "> and s.updated_at = #{updatedAt}</if>
+        </where>
+    </select>
+    
+    <select id="selectStStudentsById" parameterType="String" resultMap="StStudentsResult">
+        <include refid="selectStStudentsVo"/>
+        where s.id = #{id}
+    </select>
+
+    <insert id="insertStStudents" parameterType="StStudents" useGeneratedKeys="true" keyProperty="id">
+        insert into st_students_base
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="idCardNo != null and idCardNo != ''">id_card_no,</if>
+            <if test="gender != null and gender != ''">gender,</if>
+            <if test="ethnicity != null and ethnicity != ''">ethnicity,</if>
+            <if test="domicile != null and domicile != ''">domicile,</if>
+            <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id,</if>
+            <if test="studyStatus != null and studyStatus != ''">study_status,</if>
+            <if test="difficultyTypeId != null">difficulty_type_id,</if>
+            <if test="difficultyLevelId != null">difficulty_level_id,</if>
+            <if test="isPovertyReliefFamily != null and isPovertyReliefFamily != ''">is_poverty_relief_family,</if>
+            <if test="povertyReliefYear != null">poverty_relief_year,</if>
+            <if test="memo != null and memo != ''">memo,</if>
+            <if test="createdAt != null">created_at,</if>
+            <if test="updatedAt != null">updated_at,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="idCardNo != null and idCardNo != ''">#{idCardNo},</if>
+            <if test="gender != null and gender != ''">#{gender},</if>
+            <if test="ethnicity != null and ethnicity != ''">#{ethnicity},</if>
+            <if test="domicile != null and domicile != ''">#{domicile},</if>
+            <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="currentYearSemesterId != null">#{currentYearSemesterId},</if>
+            <if test="studyStatus != null and studyStatus != ''">#{studyStatus},</if>
+            <if test="difficultyTypeId != null">#{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null">#{difficultyLevelId},</if>
+            <if test="isPovertyReliefFamily != null and isPovertyReliefFamily != ''">#{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">#{povertyReliefYear},</if>
+            <if test="memo != null and memo != ''">#{memo},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+            <if test="updatedAt != null">#{updatedAt},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStStudents" parameterType="StStudents">
+        update st_students_base
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="idCardNo != null and idCardNo != ''">id_card_no = #{idCardNo},</if>
+            <if test="gender != null and gender != ''">gender = #{gender},</if>
+            <if test="ethnicity != null and ethnicity != ''">ethnicity = #{ethnicity},</if>
+            <if test="domicile != null and domicile != ''">domicile = #{domicile},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id = #{currentYearSemesterId},</if>
+            <if test="studyStatus != null and studyStatus != ''">study_status = #{studyStatus},</if>
+            <if test="difficultyTypeId != null">difficulty_type_id = #{difficultyTypeId},</if>
+            <if test="difficultyLevelId != null">difficulty_level_id = #{difficultyLevelId},</if>
+            <if test="isPovertyReliefFamily != null and isPovertyReliefFamily != ''">is_poverty_relief_family = #{isPovertyReliefFamily},</if>
+            <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
+            <if test="memo != null and memo != ''">memo = #{memo},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStStudentsById" parameterType="String">
+        delete from st_students_base where id = #{id}
+    </delete>
+
+    <delete id="deleteStStudentsByIds" parameterType="String">
+        delete from st_students_base where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 查询学制列表 -->
+    <select id="selectSchoolPlanList" resultType="java.util.HashMap">
+        select id, name, years from st_schooling_plans order by id
+    </select>
+
+    <!-- 根据学制ID查询年级列表 -->
+    <select id="selectGradeListByPlanId" parameterType="String" resultType="java.util.HashMap">
+        select id, name, schooling_plan_id as schoolingPlanId 
+        from st_grades 
+        where schooling_plan_id = #{schoolingPlanId}
+        order by id
+    </select>
+
+    <!-- 根据年级ID查询班级列表 -->
+    <select id="selectClassListByGradeId" parameterType="String" resultType="java.util.HashMap">
+        select class_id as classId, class_name as className, grade_id as gradeId, head_teacher as headTeacher
+        from st_class_info
+        where grade_id = #{gradeId}
+        order by class_id
+    </select>
+
+    <!-- 批量更新困难类型和等级 -->
+    <update id="batchUpdateDifficultyInfo" parameterType="java.util.Map">
+        update st_students_base
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="difficultyTypeId != null">
+                difficulty_type_id = #{difficultyTypeId},
+            </if>
+            <if test="difficultyLevelId != null">
+                difficulty_level_id = #{difficultyLevelId},
+            </if>
+            <if test="isPovertyReliefFamily != null">
+                is_poverty_relief_family = #{isPovertyReliefFamily},
+            </if>
+            <if test="povertyReliefYear != null">
+                poverty_relief_year = #{povertyReliefYear},
+            </if>
+            updated_at = NOW()
+        </trim>
+        where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

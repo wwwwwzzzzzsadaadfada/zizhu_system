@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StSubsidyQuotaMapper">
+    
+    <resultMap type="StSubsidyQuota" id="StSubsidyQuotaResult">
+        <result property="id"    column="id"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />
+        <result property="issueDate"    column="issue_date"    />
+        <result property="quotaDocNo"    column="quota_doc_no"    />
+        <result property="budgetProjectName"    column="budget_project_name"    />
+        <result property="totalQuota"    column="total_quota"    />
+        <result property="functionCategory"    column="function_category"    />
+        <result property="economyCategory"    column="economy_category"    />
+        <result property="budgetLevel"    column="budget_level"    />
+        <result property="allocatedAmount"    column="allocated_amount"    />
+        <result property="status"    column="status"    />
+        <result property="quotaSourceType"    column="quota_source_type"    />
+        <result property="sourceQuotaId"    column="source_quota_id"    />
+        <result property="isCarryover"    column="is_carryover"    />
+        <result property="sourceSemesterId"    column="source_semester_id"    />
+        <result property="sourceQuotaDocNo"    column="source_quota_doc_no"    />
+        <result property="memo"    column="memo"    />
+        <result property="createTime"    column="created_at"    />
+        <result property="updateTime"    column="updated_at"    />
+        <!-- 关联查询字段 -->
+        <result property="schoolYear"    column="school_year"    />
+        <result property="semester"    column="semester"    />
+        <result property="semesterLabel"    column="semester_label"    />
+        <result property="availableQuota"    column="available_quota"    />
+        <result property="carryOverAmount"    column="carry_over_amount"    />
+        <result property="isHistoricalSemester"    column="is_historical_semester"    />
+        <result property="canCarryOver"    column="can_carry_over"    />
+        <result property="hasCarriedOver"    column="has_carried_over"    />
+        <!-- 经济分类明细列表 -->
+        <collection property="detailList" ofType="StSubsidyQuotaDetail" column="id" select="com.ruoyi.system.mapper.StSubsidyQuotaDetailMapper.selectDetailListByQuotaId" />
+    </resultMap>
+
+    <sql id="selectStSubsidyQuotaVo">
+        <![CDATA[
+        select 
+            q.id, q.year_semester_id, q.issue_date, q.quota_doc_no, 
+            q.budget_project_name, q.total_quota, q.function_category, q.economy_category,
+            q.budget_level, q.allocated_amount, q.status, 
+            q.quota_source_type, q.source_quota_id, q.is_carryover, q.source_semester_id, q.memo,
+            q.created_at, q.updated_at,
+            ys.school_year, ys.semester
+        from st_subsidy_quota q
+        left join st_school_year_semester ys on q.year_semester_id = ys.id
+        ]]>
+    </sql>
+
+    <select id="selectStSubsidyQuotaList" parameterType="StSubsidyQuota" resultMap="StSubsidyQuotaResult">
+        <include refid="selectStSubsidyQuotaVo"/>
+        <where>  
+            <if test="yearSemesterId != null">and q.year_semester_id = #{yearSemesterId}</if>
+            <if test="quotaDocNo != null and quotaDocNo != ''">and q.quota_doc_no like concat('%', #{quotaDocNo}, '%')</if>
+            <if test="functionCategory != null and functionCategory != ''">and q.function_category = #{functionCategory}</if>
+            <if test="economyCategory != null and economyCategory != ''">and q.economy_category = #{economyCategory}</if>
+            <if test="status != null">and q.status = #{status}</if>
+            <if test="quotaSourceType != null">and q.quota_source_type = #{quotaSourceType}</if>
+            <if test="schoolYear != null and schoolYear != ''">and ys.school_year = #{schoolYear}</if>
+            <if test="semester != null">and ys.semester = #{semester}</if>
+        </where>
+        order by q.created_at desc
+    </select>
+
+    <select id="selectStSubsidyQuotaListWithUsage" parameterType="StSubsidyQuota" resultMap="StSubsidyQuotaResult">
+        select 
+            q.id, q.year_semester_id, q.issue_date, q.quota_doc_no, 
+            q.budget_project_name, q.total_quota, q.function_category, q.economy_category,
+            q.budget_level, q.allocated_amount, q.status, q.quota_source_type, q.source_quota_id, 
+            q.is_carryover, q.source_semester_id, q.memo,
+            q.created_at, q.updated_at,
+            ys.school_year, ys.semester
+        from st_subsidy_quota q
+        left join st_school_year_semester ys on q.year_semester_id = ys.id
+        <where>  
+            <if test="yearSemesterId != null">and q.year_semester_id = #{yearSemesterId}</if>
+            <if test="quotaDocNo != null and quotaDocNo != ''">and q.quota_doc_no like concat('%', #{quotaDocNo}, '%')</if>
+            <if test="functionCategory != null and functionCategory != ''">and q.function_category = #{functionCategory}</if>
+            <if test="economyCategory != null and economyCategory != ''">and q.economy_category = #{economyCategory}</if>
+            <if test="status != null">and q.status = #{status}</if>
+            <if test="quotaSourceType != null">and q.quota_source_type = #{quotaSourceType}</if>
+            <if test="schoolYear != null and schoolYear != ''">and ys.school_year = #{schoolYear}</if>
+            <if test="semester != null">and ys.semester = #{semester}</if>
+        </where>
+        order by q.created_at desc
+    </select>
+    
+    <select id="selectStSubsidyQuotaById" parameterType="Long" resultMap="StSubsidyQuotaResult">
+        <include refid="selectStSubsidyQuotaVo"/>
+        where q.id = #{id}
+    </select>
+    
+    <select id="selectStSubsidyQuotaByDocNoAndSemester" resultMap="StSubsidyQuotaResult">
+        <include refid="selectStSubsidyQuotaVo"/>
+        where TRIM(q.quota_doc_no) = TRIM(#{quotaDocNo}) and q.year_semester_id = #{yearSemesterId}
+        limit 1
+    </select>
+
+    <insert id="insertStSubsidyQuota" parameterType="StSubsidyQuota" useGeneratedKeys="true" keyProperty="id">
+        insert into st_subsidy_quota
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="issueDate != null">issue_date,</if>
+            <if test="quotaDocNo != null">quota_doc_no,</if>
+            <if test="budgetProjectName != null">budget_project_name,</if>
+            <if test="totalQuota != null">total_quota,</if>
+            <if test="functionCategory != null">function_category,</if>
+            <if test="economyCategory != null">economy_category,</if>
+            <if test="budgetLevel != null">budget_level,</if>
+            <if test="status != null">status,</if>
+            <if test="quotaSourceType != null">quota_source_type,</if>
+            <if test="sourceQuotaId != null">source_quota_id,</if>
+            <if test="isCarryover != null">is_carryover,</if>
+            <if test="sourceSemesterId != null">source_semester_id,</if>
+            <if test="memo != null">memo,</if>
+            created_at
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="issueDate != null">#{issueDate},</if>
+            <if test="quotaDocNo != null">#{quotaDocNo},</if>
+            <if test="budgetProjectName != null">#{budgetProjectName},</if>
+            <if test="totalQuota != null">#{totalQuota},</if>
+            <if test="functionCategory != null">#{functionCategory},</if>
+            <if test="economyCategory != null">#{economyCategory},</if>
+            <if test="budgetLevel != null">#{budgetLevel},</if>
+            <if test="status != null">#{status},</if>
+            <if test="quotaSourceType != null">#{quotaSourceType},</if>
+            <if test="sourceQuotaId != null">#{sourceQuotaId},</if>
+            <if test="isCarryover != null">#{isCarryover},</if>
+            <if test="sourceSemesterId != null">#{sourceSemesterId},</if>
+            <if test="memo != null">#{memo},</if>
+            sysdate()
+         </trim>
+    </insert>
+
+    <update id="updateStSubsidyQuota" parameterType="StSubsidyQuota">
+        update st_subsidy_quota
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="quotaDocNo != null">quota_doc_no = #{quotaDocNo},</if>
+            <if test="budgetProjectName != null">budget_project_name = #{budgetProjectName},</if>
+            <if test="totalQuota != null">total_quota = #{totalQuota},</if>
+            <if test="functionCategory != null">function_category = #{functionCategory},</if>
+            <if test="economyCategory != null">economy_category = #{economyCategory},</if>
+            <if test="budgetLevel != null">budget_level = #{budgetLevel},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="quotaSourceType != null">quota_source_type = #{quotaSourceType},</if>
+            <if test="sourceQuotaId != null">source_quota_id = #{sourceQuotaId},</if>
+            <if test="isCarryover != null">is_carryover = #{isCarryover},</if>
+            <if test="sourceSemesterId != null">source_semester_id = #{sourceSemesterId},</if>
+            <if test="memo != null">memo = #{memo},</if>
+            updated_at = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStSubsidyQuotaById" parameterType="Long">
+        delete from st_subsidy_quota where id = #{id}
+    </delete>
+
+    <delete id="deleteStSubsidyQuotaByIds" parameterType="Long">
+        delete from st_subsidy_quota where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 更新指标的已分配金额 -->
+    <update id="updateAllocatedAmount">
+        update st_subsidy_quota
+        set allocated_amount = COALESCE(allocated_amount, 0) + #{amount},
+            updated_at = NOW()
+        where id = #{quotaId}
+        and (COALESCE(allocated_amount, 0) + #{amount}) >= 0
+    </update>
+    
+    <!-- 根据明细ID获取已分配金额 -->
+    <select id="getAllocatedAmountByDetailId" parameterType="Long" resultType="BigDecimal">
+        SELECT COALESCE(SUM(b.budget_amount), 0)
+        FROM st_semester_budget b
+        WHERE b.quota_detail_id = #{detailId}
+    </select>
+    
+    <!-- 修复所有指标的已分配金额 -->
+    <update id="fixAllocatedAmount">
+        UPDATE st_subsidy_quota q
+        SET q.allocated_amount = (
+            SELECT COALESCE(SUM(b.budget_amount), 0)
+            FROM st_semester_budget b
+            WHERE b.quota_id = q.id
+        )
+        WHERE q.id IS NOT NULL
+    </update>
+    
+    <!-- 根据经济分类更新指标明细的已分配金额 -->
+    <update id="updateAllocatedAmountByEconomyCategory">
+        UPDATE st_subsidy_quota_detail
+        SET allocated_amount = COALESCE(allocated_amount, 0) + #{amount}
+        WHERE quota_id = #{quotaId} AND economy_category = #{economyCategory}
+    </update>
+    
+    <!-- 查询所有预算项目名称（去重） -->
+    <select id="selectAllBudgetProjectNames" resultType="String">
+        SELECT DISTINCT q.budget_project_name
+        FROM st_subsidy_quota q
+        LEFT JOIN st_semester_budget b ON q.id = b.quota_id
+        WHERE q.budget_project_name IS NOT NULL AND q.budget_project_name != ''
+        <if test="_parameter != null">
+            AND b.year_semester_id = #{_parameter}
+        </if>
+        ORDER BY q.budget_project_name
+    </select>
+    
+    <!-- 查询所有预算项目名称（去重） -->
+    <select id="selectAllBudgetProjectNamesWithoutFilter" resultType="String">
+        SELECT DISTINCT budget_project_name
+        FROM st_subsidy_quota
+        WHERE budget_project_name IS NOT NULL AND budget_project_name != ''
+        ORDER BY budget_project_name
+    </select>
+
+    <update id="updateQuotaAggregateFields" parameterType="StSubsidyQuota">
+        update st_subsidy_quota
+        set total_quota = #{totalQuota},
+            allocated_amount = #{allocatedAmount},
+            status = #{status},
+            updated_at = sysdate()
+        where id = #{id}
+    </update>
+    
+    <!-- 查询来源指标的每个经济分类已结转的金额 -->
+    <select id="getCarriedOverAmountByEconomyCategory" parameterType="Long" resultType="map">
+        SELECT 
+            d.economy_category as economyCategory,
+            COALESCE(SUM(d.total_amount), 0) as carriedOverAmount
+        FROM st_subsidy_quota q
+        INNER JOIN st_subsidy_quota_detail d ON q.id = d.quota_id
+        WHERE q.source_quota_id = #{sourceQuotaId}
+        GROUP BY d.economy_category
+    </select>
+    
+    <!-- 根据学年学期ID和功能分类查询指标文号列表（去重） -->
+    <select id="selectQuotaDocNosByYearSemesterAndFunction" resultType="String">
+        SELECT DISTINCT q.quota_doc_no
+        FROM st_subsidy_quota q
+        WHERE q.year_semester_id = #{yearSemesterId}
+          AND q.function_category = #{functionCategory}
+          AND q.quota_doc_no IS NOT NULL
+          AND q.quota_doc_no != ''
+        ORDER BY q.quota_doc_no
+    </select>
+</mapper>
