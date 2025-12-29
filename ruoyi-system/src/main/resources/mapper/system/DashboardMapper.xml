@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.DashboardMapper">
+
+    <!-- 统计在校学生总数 -->
+    <select id="countTotalStudents" resultType="int">
+        SELECT COUNT(*) 
+        FROM st_students_base sb
+        INNER JOIN st_schooling_plans sp ON sb.schooling_plan_id = sp.id
+        WHERE sb.study_status = '1'
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+    </select>
+
+    <!-- 统计困难学生总数(从学生基础信息表统计所有有困难类型的学生) -->
+    <select id="countDifficultyStudents" resultType="int">
+        SELECT COUNT(*)
+        FROM st_students_base sb
+        INNER JOIN st_schooling_plans sp ON sb.schooling_plan_id = sp.id
+        WHERE sb.difficulty_type_id IS NOT NULL
+        AND sb.difficulty_type_id != ''
+        AND sb.study_status = '1'
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+    </select>
+
+    <!-- 统计受助人次(当前学期,所有学段且审批通过) -->
+    <select id="countSubsidyTimes" resultType="int">
+        SELECT COUNT(*)
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        AND ssr.subsidy_amount IS NOT NULL
+        AND ssr.subsidy_amount > 0
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+    </select>
+
+    <!-- 统计资助档案数(当前学期,所有学段且审批通过) -->
+    <select id="countSubsidyRecords" resultType="int">
+        SELECT COUNT(*)
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+    </select>
+
+    <!-- 统计资助项目数 -->
+    <select id="countSubsidyProjects" resultType="int">
+        SELECT COUNT(DISTINCT subsidy_type)
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE subsidy_type IS NOT NULL
+        AND subsidy_type != ''
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+    </select>
+
+    <!-- 获取困难类型分布(当前学期,所有学段且审批通过) -->
+    <select id="getDifficultyTypeDistribution" resultType="map">
+        SELECT 
+            COALESCE(dict.dict_label, sb.difficulty_type_id) AS name,
+            COUNT(DISTINCT ssr.student_id) AS value
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_students_base sb ON ssr.student_id = sb.id
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        LEFT JOIN sys_dict_data dict ON dict.dict_type = 'sys_difficulty_type' AND dict.dict_value = sb.difficulty_type_id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        AND sb.difficulty_type_id IS NOT NULL
+        AND sb.difficulty_type_id != ''
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        GROUP BY sb.difficulty_type_id, dict.dict_label
+        ORDER BY value DESC
+    </select>
+
+    <!-- 获取各学段受助人数(当前学期,统计所有学段) -->
+    <select id="getSchoolLevelStats" resultType="map">
+        SELECT 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN '小学'
+                WHEN sp.name LIKE '%初中%' THEN '初中'
+                WHEN sp.name LIKE '%高中%' THEN '普通高中'
+                ELSE sp.name
+            END AS label,
+            COUNT(DISTINCT ssr.student_id) AS count
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        AND ssr.subsidy_amount IS NOT NULL
+        AND ssr.subsidy_amount > 0
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        GROUP BY 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN '小学'
+                WHEN sp.name LIKE '%初中%' THEN '初中'
+                WHEN sp.name LIKE '%高中%' THEN '普通高中'
+                ELSE sp.name
+            END
+        ORDER BY 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN 1
+                WHEN sp.name LIKE '%初中%' THEN 2
+                WHEN sp.name LIKE '%高中%' THEN 3
+                ELSE 4
+            END
+    </select>
+
+    <!-- 获取指标下达表统计(当前学期) -->
+    <select id="getQuotaStats" resultType="map">
+        SELECT 
+            COALESCE(SUM(sq.total_quota), 0) AS totalQuota,
+            COALESCE(SUM(sq.allocated_amount), 0) AS allocatedAmount,
+            COALESCE(SUM(sq.total_quota) - SUM(sq.allocated_amount), 0) AS availableQuota,
+            CASE 
+                WHEN SUM(sq.total_quota) > 0 
+                THEN ROUND(SUM(sq.allocated_amount) * 100.0 / SUM(sq.total_quota), 0)
+                ELSE 0
+            END AS allocationRate
+        FROM st_subsidy_quota sq
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND sq.year_semester_id = #{yearSemesterId}
+        </if>
+        AND sq.status IN (1, 2, 3)
+        <if test="segment == 'high'">
+            AND sq.function_category = '3'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND sq.function_category IN ('1', '2')
+        </if>
+    </select>
+
+    <!-- 获取学期预算表统计(当前学期) -->
+    <select id="getBudgetStats" resultType="map">
+        SELECT 
+            COALESCE(SUM(sb.budget_amount), 0) AS totalBudget,
+            COALESCE(SUM(sb.used_amount), 0) AS usedAmount,
+            COALESCE(SUM(sb.locked_amount), 0) AS lockedAmount,
+            COALESCE(SUM(sb.budget_amount) - SUM(sb.used_amount) - SUM(sb.locked_amount), 0) AS availableBudget,
+            CASE 
+                WHEN SUM(sb.budget_amount) > 0 
+                THEN ROUND(SUM(sb.used_amount) * 100.0 / SUM(sb.budget_amount), 0)
+                ELSE 0
+            END AS usageRate
+        FROM st_semester_budget sb
+        INNER JOIN st_subsidy_quota sq ON sb.quota_id = sq.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND sb.year_semester_id = #{yearSemesterId}
+        </if>
+        AND sb.status = 1
+        <if test="segment == 'high'">
+            AND sq.function_category = '3'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND sq.function_category IN ('1', '2')
+        </if>
+    </select>
+
+    <!-- 获取地图数据(按县区统计,当前学期,所有学段且审批通过) -->
+    <select id="getMapData" resultType="map">
+        SELECT 
+            SUBSTRING_INDEX(SUBSTRING_INDEX(sb.domicile, '市', 2), '市', -1) AS name,
+            COUNT(DISTINCT ssr.student_id) AS value
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_students_base sb ON ssr.student_id = sb.id
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        AND sb.domicile IS NOT NULL
+        AND sb.domicile != ''
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        GROUP BY SUBSTRING_INDEX(SUBSTRING_INDEX(sb.domicile, '市', 2), '市', -1)
+        ORDER BY value DESC
+    </select>
+
+    <!-- 获取学段受助金额统计(当前学期,所有学段,已审核通过) -->
+    <select id="getAmountBySchoolLevel" resultType="map">
+        SELECT 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN '小学'
+                WHEN sp.name LIKE '%初中%' THEN '初中'
+                WHEN sp.name LIKE '%高中%' THEN '普通高中'
+                ELSE sp.name
+            END AS label,
+            COUNT(DISTINCT ssr.student_id) AS count,
+            CONCAT(SUM(ssr.subsidy_amount) / 10000, '万元') AS amount
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        AND ssr.subsidy_amount IS NOT NULL
+        AND ssr.subsidy_amount > 0
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        GROUP BY 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN '小学'
+                WHEN sp.name LIKE '%初中%' THEN '初中'
+                WHEN sp.name LIKE '%高中%' THEN '普通高中'
+                ELSE sp.name
+            END
+        ORDER BY 
+            CASE 
+                WHEN sp.name LIKE '%小学%' THEN 1
+                WHEN sp.name LIKE '%初中%' THEN 2
+                WHEN sp.name LIKE '%高中%' THEN 3
+                ELSE 4
+            END
+    </select>
+
+    <!-- 获取资助项目列表(最近的项目,所有学段且审批通过) -->
+    <select id="getProjectList" resultType="map">
+        SELECT 
+            'success' AS status,
+            'YG' AS statusText,
+            ssr.subsidy_type AS type,
+            DATE_FORMAT(ssr.created_at, '%Y-%u6708-%d %H:%i') AS time
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE ssr.approval_status = 1
+        AND ssr.subsidy_type IS NOT NULL
+        AND ssr.subsidy_type != ''
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        ORDER BY ssr.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取用户注册统计(最近几个月) -->
+    <select id="getUserRegistrations" resultType="map">
+        SELECT 
+            'app注册统计' AS userName,
+            DATE_FORMAT(create_time, '%Y-%m') AS time
+        FROM sys_user
+        WHERE del_flag = '0'
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取本学期受助人数趋势(按月份,所有学段且审批通过) -->
+    <select id="getSubsidyTrend" resultType="map">
+        SELECT 
+            DATE_FORMAT(ssr.created_at, '%Y-%u6708') AS month,
+            COUNT(DISTINCT ssr.student_id) AS count
+        FROM st_student_subsidy_records ssr
+        INNER JOIN st_schooling_plans sp ON ssr.schooling_plan_id = sp.id
+        WHERE 1=1
+        <if test="yearSemesterId != null">
+            AND ssr.year_semester_id = #{yearSemesterId}
+        </if>
+        AND ssr.approval_status = 1
+        <if test="segment == 'high'">
+            AND sp.name LIKE '%高中%'
+        </if>
+        <if test="segment == 'compulsory'">
+            AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
+        </if>
+        GROUP BY DATE_FORMAT(ssr.created_at, '%Y-%u6708')
+        ORDER BY month ASC
+    </select>
+
+</mapper>
