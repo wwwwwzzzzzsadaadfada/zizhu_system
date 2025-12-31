@@ -144,3 +144,9 @@ jimu:
     datasource:
       # 数据源类型：使用 Spring 数据源
       type: spring
+
+# 加密配置
+encryption:
+  # AES密钥（必须16字节）
+  # 优先从环境变量读取，如果没有则使用默认值（仅用于本地开发）
+  aes-key: ${AES_SECRET_KEY}

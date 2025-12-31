@@ -110,4 +110,12 @@ public interface IStStudentSemesterRecordService
      */
     public com.ruoyi.system.domain.SyncAidedStudentResult syncAllStudentsToAidedTable(String academicYear, String semester);
 
+    /**
+     * 获取同步进度
+     * 
+     * @param academicYear 学年
+     * @param semester 学期
+     * @return 进度信息
+     */
+    public com.ruoyi.system.domain.SyncProgress getSyncProgress(String academicYear, String semester);
 }

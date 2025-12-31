@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import java.util.Date;
+import javax.validation.constraints.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -21,28 +22,42 @@ public class StStudentsBase extends BaseEntity
     private Long id;
 
     /** 姓名 */
+    @NotBlank(message = "姓名不能为空")
+    @Size(min = 2, max = 50, message = "姓名长度应在2-50之间")
     @Excel(name = "姓名")
     private String name;
 
     /** 身份证号 */
+    @NotBlank(message = "身份证号不能为空")
+    @Pattern(regexp = "^\\d{18}$|^\\d{17}[Xx]$", message = "身份证号格式不正确(18位数字或17位数字+X)")
     @Excel(name = "身份证号")
     private String idCardNo;
 
     /** 性别 */
+    @Pattern(regexp = "^[01]?$", message = "性别值不正确")
     @Excel(name = "性别", dictType = "sys_student_gender")
     private String gender;
 
     /** 民族 */
+    @Size(max = 10, message = "民族不超过10字符")
     @Excel(name = "民族", dictType = "sys_student_ethnicity")
     private String ethnicity;
 
     /** 户籍所在地 */
+    @Size(max = 200, message = "户籍所在地不超过200字符")
     @Excel(name = "户籍所在地")
     private String domicile;
 
     /** 学籍号 */
+    @NotBlank(message = "学籍号不能为空")
+    @Size(max = 32, message = "学籍号不超过32字符")
     @Excel(name = "学籍号")
     private String studentNo;
+
+    /** 联系电话 */
+    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号码格式不正确")
+    @Excel(name = "联系电话")
+    private String phone;
 
     /** 学制 */
     @Excel(name = "学制")
@@ -65,10 +80,17 @@ public class StStudentsBase extends BaseEntity
     /** 班级名称（冗余） */
     private String className;
 
+    /** 最后一次年级更新时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastGradeUpdate;
+
     /** 是否脱贫户 */
+    @Pattern(regexp = "^[01]?$", message = "是否脱贫户只能为0或1")
     private String isPovertyReliefFamily;
 
     /** 脱贫年份 */
+    @Min(value = 1990, message = "脱贫年份不能早于1990年")
+    @Max(value = 2099, message = "脱贫年份不能晚于2099年")
     private Integer povertyReliefYear;
 
     /** 创建时间 */
@@ -151,6 +173,16 @@ public class StStudentsBase extends BaseEntity
         return studentNo;
     }
 
+    public void setPhone(String phone)
+    {
+        this.phone = phone;
+    }
+
+    public String getPhone()
+    {
+        return phone;
+    }
+
     public Long getSchoolingPlanId()
     {
         return schoolingPlanId;
@@ -209,6 +241,16 @@ public class StStudentsBase extends BaseEntity
     public void setClassName(String className)
     {
         this.className = className;
+    }
+
+    public Date getLastGradeUpdate()
+    {
+        return lastGradeUpdate;
+    }
+
+    public void setLastGradeUpdate(Date lastGradeUpdate)
+    {
+        this.lastGradeUpdate = lastGradeUpdate;
     }
 
     public String getIsPovertyReliefFamily()

@@ -47,6 +47,11 @@ public class StFamilyMemberServiceImpl implements IStFamilyMemberService {
     }
 
     @Override
+    public int deleteByStudentId(Long studentId) {
+        return stFamilyMemberMapper.deleteByStudentId(studentId);
+    }
+
+    @Override
     @Transactional
     public void saveByStudentId(Long studentId, Long yearSemesterId, List<StFamilyMember> members) {
         if (studentId == null) {

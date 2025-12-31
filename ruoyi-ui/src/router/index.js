@@ -174,6 +174,20 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/system/students-form',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:students:add', 'system:students:edit'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/students/form'),
+        name: 'StudentForm',
+        meta: { title: '学生信息表单', activeMenu: '/system/students' }
+      }
+    ]
   }
 ]
 

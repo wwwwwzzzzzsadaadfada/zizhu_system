@@ -102,11 +102,12 @@ public interface DashboardMapper
     List<Map<String, Object>> getMapData(@Param("yearSemesterId") Long yearSemesterId, @Param("segment") String segment);
 
     /**
-     * 获取学段受助金额统计(当前学期,所有学段)
+     * 获取年级受助金额统计(当前学期,按年级统计)
+     * 最后一行显示总计(总人数和总金额)
      * 
      * @param yearSemesterId 学年学期ID
      * @param segment 学段筛选
-     * @return 学段受助金额统计数据
+     * @return 年级受助金额统计数据
      */
     List<Map<String, Object>> getAmountBySchoolLevel(@Param("yearSemesterId") Long yearSemesterId, @Param("segment") String segment);
 

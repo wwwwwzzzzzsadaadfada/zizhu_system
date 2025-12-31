@@ -125,4 +125,5 @@ public class StStudentsBaseController extends BaseController
     {
         return toAjax(stStudentsBaseService.deleteStStudentsBaseByIds(ids));
     }
+    
 }

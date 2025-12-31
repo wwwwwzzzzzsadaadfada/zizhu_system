@@ -17,6 +17,11 @@ public interface IStStudentBankCardService {
     int deleteStStudentBankCardByIds(Long[] ids);
 
     /**
+     * 根据学生 ID 删除其所有银行卡
+     */
+    int deleteByStudentId(Long studentId);
+
+    /**
      * 覆盖保存指定学生的银行卡列表（先删后插）
      */
     void saveByStudentId(Long studentId, List<StStudentBankCard> cards);

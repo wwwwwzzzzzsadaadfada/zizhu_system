@@ -16,33 +16,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="nation" column="nation"/>
         <result property="nationName" column="nation_name"/>
         <result property="phone" column="phone"/>
+        <result property="domicile" column="domicile"/>
+        <result property="isEthnicClass" column="is_ethnic_class"/>
         <result property="collegeId" column="college_id"/>
         <result property="collegeName" column="college_name"/>
         <result property="majorId" column="major_id"/>
         <result property="majorName" column="major_name"/>
         <result property="grade" column="grade"/>
+        <result property="gradeIdDb" column="grade_id"/>
         <result property="clazzId" column="clazz_id"/>
         <result property="clazzName" column="clazz_name"/>
         <result property="enrollmentDate" column="enrollment_date"/>
         <result property="graduationDate" column="graduation_date"/>
+        <result property="studyStatus" column="study_status"/>
+        <result property="lastGradeUpdate" column="last_grade_update"/>
         <result property="academicYear" column="academic_year"/>
         <result property="semester" column="semester"/>
+        <result property="currentYearSemesterId" column="current_year_semester_id"/>
         <result property="difficultyTypeId" column="difficulty_type_id"/>
         <result property="difficultyLevelId" column="difficulty_level_id"/>
         <result property="isPovertyReliefFamily" column="is_poverty_relief_family"/>
         <result property="povertyReliefYear" column="poverty_relief_year"/>
-        <result property="subsidyLevel" column="subsidy_level"/>
-        <result property="subsidyAmount" column="subsidy_amount"/>
-        <result property="subsidyReason" column="subsidy_reason"/>
-        <result property="subsidyStatus" column="subsidy_status"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
         <!-- 关联字段（不直接存表）：学制、年级、功能分类、学年学期等 -->
+        <result property="schoolingPlanIdDb" column="schooling_plan_id_db"/>
         <result property="schoolingPlanId" column="schooling_plan_id"/>
-        <result property="gradeId" column="grade_id"/>
+        <result property="gradeId" column="grade_id_ref"/>
         <result property="functionCategory" column="function_category"/>
         <result property="approvalStatus" column="approval_status"/>
         <result property="recordSubsidyAmount" column="record_subsidy_amount"/>
@@ -53,19 +56,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStAidedStudentInfoVo">
         select 
             asi.id, asi.student_id, asi.student_no, asi.student_name, asi.id_card, asi.gender, asi.birthday, 
-            asi.political_status, asi.nation, asi.nation_name, asi.phone, asi.college_id, asi.college_name, 
-            asi.major_id, asi.major_name, asi.grade, asi.clazz_id, asi.clazz_name, asi.enrollment_date, 
-            asi.graduation_date, asi.academic_year, asi.semester, 
+            asi.political_status, asi.nation, asi.nation_name, asi.phone, asi.domicile, asi.is_ethnic_class,
+            asi.college_id, asi.college_name, 
+            asi.major_id, asi.major_name, asi.grade, asi.grade_id, asi.clazz_id, asi.clazz_name, asi.enrollment_date, 
+            asi.graduation_date, asi.study_status, asi.last_grade_update, asi.academic_year, asi.semester, asi.current_year_semester_id,
             -- 直接从受助学生信息表获取困难类型和困难等级
             asi.difficulty_type_id,
             asi.difficulty_level_id, 
-            asi.is_poverty_relief_family, asi.poverty_relief_year, asi.subsidy_level, asi.subsidy_amount, 
-            asi.subsidy_reason, asi.subsidy_status, asi.create_by, asi.create_time, asi.update_by, asi.update_time, 
+            asi.is_poverty_relief_family, asi.poverty_relief_year, 
+            asi.create_by, asi.create_time, asi.update_by, asi.update_time, 
             asi.remark,
-            -- 关联查询学制ID（用于筛选）
+            -- 数据库中的学制ID字段
+            asi.schooling_plan_id as schooling_plan_id_db,
+            -- 关联查询学制ID（用于筛选，从st_students_base表获取）
             sb.schooling_plan_id as schooling_plan_id,
-            -- 关联查询年级ID（用于筛选）
-            sb.grade_id as grade_id,
+            -- 关联查询年级ID（用于筛选，从st_students_base表获取）
+            sb.grade_id as grade_id_ref,
             -- 根据学制ID计算功能分类（1=小学,2=初中,3=高中）
             CASE 
                 WHEN sb.schooling_plan_id = 1 THEN '1'
@@ -145,10 +151,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="difficultyTypeId != null  and difficultyTypeId != ''"> and asi.difficulty_type_id = #{difficultyTypeId}</if>
             <if test="difficultyLevelId != null  and difficultyLevelId != ''"> and asi.difficulty_level_id = #{difficultyLevelId}</if>
             <if test="isPovertyReliefFamily != null  and isPovertyReliefFamily != ''"> and asi.is_poverty_relief_family = #{isPovertyReliefFamily}</if>
-            <if test="subsidyLevel != null  and subsidyLevel != ''"> and asi.subsidy_level = #{subsidyLevel}</if>
-            <if test="subsidyAmount != null "> and asi.subsidy_amount = #{subsidyAmount}</if>
-            <if test="subsidyReason != null  and subsidyReason != ''"> and asi.subsidy_reason = #{subsidyReason}</if>
-            <if test="subsidyStatus != null  and subsidyStatus != ''"> and asi.subsidy_status = #{subsidyStatus}</if>
             <!-- 根据学制ID过滤（通过关联st_students_base表） -->
             <if test="schoolingPlanId != null"> and sb.schooling_plan_id = #{schoolingPlanId}</if>
             <!-- 根据年级ID过滤（通过关联st_students_base表） -->
@@ -210,25 +212,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="nation != null">nation,</if>
             <if test="nationName != null">nation_name,</if>
             <if test="phone != null">phone,</if>
+            <if test="domicile != null">domicile,</if>
+            <if test="isEthnicClass != null">is_ethnic_class,</if>
             <if test="collegeId != null">college_id,</if>
             <if test="collegeName != null">college_name,</if>
             <if test="majorId != null">major_id,</if>
             <if test="majorName != null">major_name,</if>
             <if test="grade != null">grade,</if>
+            <if test="gradeIdDb != null">grade_id,</if>
             <if test="clazzId != null">clazz_id,</if>
             <if test="clazzName != null">clazz_name,</if>
             <if test="enrollmentDate != null">enrollment_date,</if>
             <if test="graduationDate != null">graduation_date,</if>
+            <if test="studyStatus != null">study_status,</if>
+            <if test="lastGradeUpdate != null">last_grade_update,</if>
             <if test="academicYear != null">academic_year,</if>
             <if test="semester != null">semester,</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id,</if>
+            <if test="schoolingPlanIdDb != null">schooling_plan_id,</if>
             <if test="difficultyTypeId != null">difficulty_type_id,</if>
             <if test="difficultyLevelId != null">difficulty_level_id,</if>
             <if test="isPovertyReliefFamily != null">is_poverty_relief_family,</if>
             <if test="povertyReliefYear != null">poverty_relief_year,</if>
-            <if test="subsidyLevel != null">subsidy_level,</if>
-            <if test="subsidyAmount != null">subsidy_amount,</if>
-            <if test="subsidyReason != null">subsidy_reason,</if>
-            <if test="subsidyStatus != null">subsidy_status,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -246,25 +251,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="nation != null">#{nation},</if>
             <if test="nationName != null">#{nationName},</if>
             <if test="phone != null">#{phone},</if>
+            <if test="domicile != null">#{domicile},</if>
+            <if test="isEthnicClass != null">#{isEthnicClass},</if>
             <if test="collegeId != null">#{collegeId},</if>
             <if test="collegeName != null">#{collegeName},</if>
             <if test="majorId != null">#{majorId},</if>
             <if test="majorName != null">#{majorName},</if>
             <if test="grade != null">#{grade},</if>
+            <if test="gradeIdDb != null">#{gradeIdDb},</if>
             <if test="clazzId != null">#{clazzId},</if>
             <if test="clazzName != null">#{clazzName},</if>
             <if test="enrollmentDate != null">#{enrollmentDate},</if>
             <if test="graduationDate != null">#{graduationDate},</if>
+            <if test="studyStatus != null">#{studyStatus},</if>
+            <if test="lastGradeUpdate != null">#{lastGradeUpdate},</if>
             <if test="academicYear != null">#{academicYear},</if>
             <if test="semester != null">#{semester},</if>
+            <if test="currentYearSemesterId != null">#{currentYearSemesterId},</if>
+            <if test="schoolingPlanIdDb != null">#{schoolingPlanIdDb},</if>
             <if test="difficultyTypeId != null">#{difficultyTypeId},</if>
             <if test="difficultyLevelId != null">#{difficultyLevelId},</if>
             <if test="isPovertyReliefFamily != null">#{isPovertyReliefFamily},</if>
             <if test="povertyReliefYear != null">#{povertyReliefYear},</if>
-            <if test="subsidyLevel != null">#{subsidyLevel},</if>
-            <if test="subsidyAmount != null">#{subsidyAmount},</if>
-            <if test="subsidyReason != null">#{subsidyReason},</if>
-            <if test="subsidyStatus != null">#{subsidyStatus},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -286,25 +294,28 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="nation != null">nation = #{nation},</if>
             <if test="nationName != null">nation_name = #{nationName},</if>
             <if test="phone != null">phone = #{phone},</if>
+            <if test="domicile != null">domicile = #{domicile},</if>
+            <if test="isEthnicClass != null">is_ethnic_class = #{isEthnicClass},</if>
             <if test="collegeId != null">college_id = #{collegeId},</if>
             <if test="collegeName != null">college_name = #{collegeName},</if>
             <if test="majorId != null">major_id = #{majorId},</if>
             <if test="majorName != null">major_name = #{majorName},</if>
             <if test="grade != null">grade = #{grade},</if>
+            <if test="gradeIdDb != null">grade_id = #{gradeIdDb},</if>
             <if test="clazzId != null">clazz_id = #{clazzId},</if>
             <if test="clazzName != null">clazz_name = #{clazzName},</if>
             <if test="enrollmentDate != null">enrollment_date = #{enrollmentDate},</if>
             <if test="graduationDate != null">graduation_date = #{graduationDate},</if>
+            <if test="studyStatus != null">study_status = #{studyStatus},</if>
+            <if test="lastGradeUpdate != null">last_grade_update = #{lastGradeUpdate},</if>
             <if test="academicYear != null">academic_year = #{academicYear},</if>
             <if test="semester != null">semester = #{semester},</if>
+            <if test="currentYearSemesterId != null">current_year_semester_id = #{currentYearSemesterId},</if>
+            <if test="schoolingPlanIdDb != null">schooling_plan_id = #{schoolingPlanIdDb},</if>
             <if test="difficultyTypeId != null">difficulty_type_id = #{difficultyTypeId},</if>
             <if test="difficultyLevelId != null">difficulty_level_id = #{difficultyLevelId},</if>
             <if test="isPovertyReliefFamily != null">is_poverty_relief_family = #{isPovertyReliefFamily},</if>
             <if test="povertyReliefYear != null">poverty_relief_year = #{povertyReliefYear},</if>
-            <if test="subsidyLevel != null">subsidy_level = #{subsidyLevel},</if>
-            <if test="subsidyAmount != null">subsidy_amount = #{subsidyAmount},</if>
-            <if test="subsidyReason != null">subsidy_reason = #{subsidyReason},</if>
-            <if test="subsidyStatus != null">subsidy_status = #{subsidyStatus},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

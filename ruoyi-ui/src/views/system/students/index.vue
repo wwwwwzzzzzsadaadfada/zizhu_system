@@ -104,17 +104,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:students:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="danger"
           plain
           icon="el-icon-delete"
@@ -140,7 +129,6 @@
           plain
           icon="el-icon-edit-outline"
           size="mini"
-          :disabled="multiple"
           @click="handleBatchDifficulty"
           v-hasPermi="['system:students:edit']"
         >批量认定</el-button>
@@ -170,12 +158,22 @@
           <dict-tag :options="dict.type.sys_student_ethnicity" :value="scope.row.ethnicity"/>
         </template>
       </el-table-column>
+      <el-table-column label="联系电话" align="center" prop="phone" width="120" />
       <el-table-column label="户籍所在地" align="center" prop="domicile" width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           {{ formatDomicile(scope.row.domicile) }}
         </template>
       </el-table-column>
       <el-table-column label="学籍号" align="center" prop="studentNo" width="140" show-overflow-tooltip />
+      <el-table-column label="入学时间" align="center" prop="enrollmentDate" width="110" />
+      <el-table-column label="政治面貌" align="center" prop="politicalStatus" width="100" />
+      <el-table-column label="民族班" align="center" prop="isEthnicClass" width="80">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.isEthnicClass === '1' ? 'success' : 'info'" size="small">
+            {{ scope.row.isEthnicClass === '1' ? '是' : '否' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="当前学年学期" align="center" width="150">
         <template slot-scope="scope">
           <span v-if="scope.row.currentSchoolYear">
@@ -221,7 +219,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:students:edit']"
-          >修改</el-button>
+          >维护</el-button>
           <el-button
             size="mini"
             type="text"
@@ -244,515 +242,140 @@
 
     </div>
 
-    <!-- 添加或修改困难学生基础信息对话框 -->
-    <el-dialog
-      :title="title"
-      :visible.sync="open"
-      :width="dialogWidth"
-      append-to-body
+    <!-- 批量认定困难类型对话框 -->
+    <el-dialog 
+      :visible.sync="batchDifficultyOpen" 
+      width="1000px" 
+      append-to-body 
+      @open="loadUnrecognizedStudents"
       :close-on-click-modal="false"
-      :class="activeTab === 'report' ? 'report-dialog' : ''"
     >
-      <el-alert
-        class="form-tip"
-        title="提示：学生基础信息是全系统的唯一权威数据，请仔细确认后再保存。"
-        type="info"
-        show-icon
-        :closable="false"
-      />
-      <div class="section-nav">
-        <el-tabs v-model="activeTab" type="card" class="section-tabs">
-          <el-tab-pane label="基本信息" name="basic" />
-          <el-tab-pane label="家庭成员" name="family" />
-          <el-tab-pane label="银行卡" name="bank" />
-          <el-tab-pane label="助学金申请表" name="report" />
-        </el-tabs>
-      </div>
-      <div class="form-scroll" ref="formScroll">
-        <el-form ref="form" :model="form" :rules="rules" label-width="110px" :disabled="detailMode">
-          <div v-show="activeTab === 'basic'">
-          <!-- 学期信息 -->
-          <el-card shadow="never" class="form-card" ref="semesterSection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-date"></i>
-              <span>学期信息</span>
-            </div>
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="学年学期" prop="yearSemesterId">
-                  <el-select v-model="form.yearSemesterId" placeholder="请选择学年学期" style="width: 100%">
-                    <el-option
-                      v-for="item in yearSemesterOptions"
-                      :key="item.id"
-                      :label="`${item.schoolYear || ''} ${item.semesterLabel || ''}`"
-                      :value="item.id"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-
-          <!-- 基本信息 -->
-          <el-card shadow="never" class="form-card" ref="basicSection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-user"></i>
-              <span>基本信息</span>
-            </div>
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="姓名" prop="name">
-                  <el-input v-model="form.name" placeholder="请输入姓名" maxlength="50" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="性别" prop="gender">
-                  <el-select v-model="form.gender" placeholder="请选择性别" style="width: 100%">
-                    <el-option
-                      v-for="dict in dict.type.sys_student_gender"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="民族" prop="ethnicity">
-                  <el-select v-model="form.ethnicity" placeholder="请选择民族" filterable style="width: 100%">
-                    <el-option
-                      v-for="dict in dict.type.sys_student_ethnicity"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="身份证号" prop="idCardNo">
-                  <el-input v-model="form.idCardNo" placeholder="请输入18位身份证号" maxlength="18" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="学籍号" prop="studentNo">
-                  <el-input v-model="form.studentNo" placeholder="请输入学籍号" maxlength="32" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-
-          <!-- 户籍信息 -->
-          <el-card shadow="never" class="form-card" ref="domicileSection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-location"></i>
-              <span>户籍信息</span>
-            </div>
-            <el-row :gutter="20">
-              <el-col :span="24">
-                <el-form-item label="户籍所在地" prop="domicile">
-                  <div v-if="form.id && form.domicile && !isEditingAddress" class="domicile-preview">
-                    <el-input
-                      :value="form.domicile"
-                      readonly
-                      style="width: 70%"
-                    />
-                    <el-button
-                      type="text"
-                      icon="el-icon-edit"
-                      style="margin-left: 10px;"
-                      @click="isEditingAddress = true"
-                    >修改地址</el-button>
-                  </div>
-                  <div v-else class="domicile-inputs">
-                    <el-cascader
-                      v-model="form.regionCodes"
-                      :options="guangxiRegions"
-                      :props="{
-                        value: 'value',
-                        label: 'label',
-                        children: 'children',
-                        checkStrictly: true,
-                        expandTrigger: 'hover'
-                      }"
-                      placeholder="请选择市/县/乡镇"
-                      clearable
-                      filterable
-                      style="width: 40%"
-                      @change="handleRegionChange"
-                    />
-                    <el-input
-                      v-model="form.village"
-                      placeholder="请输入村/社区"
-                      maxlength="50"
-                      style="width: 28%; margin-left: 10px"
-                    />
-                    <el-input
-                      v-model="form.hamlet"
-                      placeholder="请输入屯/组"
-                      maxlength="50"
-                      style="width: 28%; margin-left: 10px"
-                    />
-                  </div>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-
-          <!-- 学籍信息 -->
-          <el-card shadow="never" class="form-card" ref="academicSection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-reading"></i>
-              <span>学籍信息</span>
-            </div>
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="所属学制" prop="schoolingPlanId">
-                  <el-select v-model="form.schoolingPlanId" placeholder="请选择学制" @change="handleSchoolPlanChange" style="width: 100%">
-                    <el-option
-                      v-for="item in schoolPlanOptions"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="所属年级" prop="gradeId">
-                  <el-select v-model="form.gradeId" placeholder="请选择年级" @change="handleGradeChange" style="width: 100%" :disabled="!form.schoolingPlanId">
-                    <el-option
-                      v-for="item in gradeOptions"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="所属班级" prop="classId">
-                  <el-select v-model="form.classId" placeholder="请选择班级" style="width: 100%" :disabled="!form.gradeId">
-                    <el-option
-                      v-for="item in classOptions"
-                      :key="item.classId"
-                      :label="item.className"
-                      :value="item.classId"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="24">
-                <el-form-item label="就读状态" prop="studyStatus">
-                  <el-select v-model="form.studyStatus" placeholder="请选择就读状态" style="width: 100%">
-                    <el-option
-                      v-for="dict in dict.type.sys_study_status"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-
-          <!-- 困难认定 -->
-          <el-card shadow="never" class="form-card" ref="difficultySection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-warning-outline"></i>
-              <span>困难认定</span>
-            </div>
-            <el-row :gutter="20">
-              <el-col :span="12">
-              <el-form-item label="困难类型" prop="difficultyTypeId">
-                <el-select v-model="form.difficultyTypeId" placeholder="请选择困难类型" style="width: 100%" @change="handleDifficultyTypeChange">
-                    <el-option
-                      v-for="dict in dict.type.sys_difficulty_type"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="困难等级" prop="difficultyLevelId">
-                  <el-select v-model="form.difficultyLevelId" placeholder="请选择困难等级" style="width: 100%">
-                    <el-option
-                      v-for="dict in dict.type.sys_difficulty_level"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20" v-if="showPovertyReliefYear">
-              <el-col :span="12">
-                <el-form-item label="脱贫年份" prop="povertyReliefYear">
-                  <el-date-picker
-                    v-model="povertyReliefYearString"
-                    type="year"
-                    placeholder="请选择脱贫年份"
-                    value-format="yyyy"
-                    style="width: 100%"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-        </div>
-
-        <div v-show="activeTab === 'family'">
-        <!-- 家庭成员 -->
-        <el-card shadow="never" class="form-card" ref="familySection">
-          <div slot="header" class="card-header">
-            <i class="el-icon-user-solid"></i>
-            <span>家庭成员</span>
-            <el-button v-if="!detailMode" type="text" icon="el-icon-plus" @click="addFamilyMember" style="margin-left: 12px;">添加成员</el-button>
+      <div slot="title" style="display: flex; align-items: center;">
+        <span style="font-size: 18px; font-weight: 600;">批量认定困难类型</span>
+        <el-popover
+          placement="right"
+          width="300"
+          trigger="click"
+        >
+          <div style="line-height: 1.6; color: #606266;">
+            <i class="" style="color: #409EFF; margin-right: 4px;"></i>
+            只能认定还没有认定困难类型的学生，请从左侧列表中选择需要认定的学生。
           </div>
-          <el-table :data="familyMembers" border size="small" style="width: 100%">
-            <el-table-column label="姓名" align="center" width="140">
-              <template slot-scope="scope">
-                <el-input v-model="scope.row.name" placeholder="姓名" size="small" />
+          <i 
+            slot="reference" 
+            class="el-icon-info" 
+            style="margin-left: 8px; font-size: 16px; color: #409EFF; cursor: pointer;"
+          ></i>
+        </el-popover>
+      </div>
+      
+      <!-- 对话框主体内容 -->
+      <div>
+        <el-row :gutter="20">
+        <!-- 左侧：筛选和穿梭框 -->
+        <el-col :span="17">
+          <!-- 筛选条件 -->
+          <div style="margin-bottom: 16px; padding: 12px 16px; background: #f5f7fa; border-radius: 4px;">
+            <div style="display: flex; align-items: center;">
+              <span style="white-space: nowrap; margin-right: 12px; font-weight: 500; color: #606266;">学段筛选：</span>
+              <el-checkbox-group v-model="transferFilter.schoolStage" @change="handleTransferFilter" size="small">
+                <el-checkbox v-for="item in schoolStageOptions" :key="item.value" :label="item.value" border style="margin-right: 8px;">
+                  {{ item.label }}
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+
+          <!-- 穿梭框 -->
+          <div style="display: flex; justify-content: center;">
+            <el-transfer
+              v-model="transferValue"
+              v-loading="transferLoading"
+              :data="transferData"
+              :titles="['未认定学生', '已选择学生']"
+              :button-texts="['移除', '选择']"
+              :props="{
+                key: 'id',
+                label: 'label'
+              }"
+              filterable
+              :filter-placeholder="'搜索学生姓名'"
+            >
+              <template slot-scope="{ option }">
+                <div>
+                  <span style="font-weight: 500;">{{ option.label }}</span>
+                  <span style="margin-left: 8px; color: #909399; font-size: 12px;">{{ option.gradeName }}</span>
+                </div>
               </template>
-            </el-table-column>
-            <el-table-column label="年龄" align="center" width="100">
-              <template slot-scope="scope">
-                <el-input-number v-model="scope.row.age" :min="0" :max="150" size="small" controls-position="right" style="width: 100%;" />
-              </template>
-            </el-table-column>
-            <el-table-column label="关系" align="center" width="130">
-              <template slot-scope="scope">
-                <el-select v-model="scope.row.relation" placeholder="关系" size="small" style="width: 100%;">
-                  <el-option v-for="item in relationOptions" :key="item.value" :label="item.label" :value="item.value" />
-                </el-select>
-              </template>
-            </el-table-column>
-            <el-table-column label="工作单位" align="center" min-width="160">
-              <template slot-scope="scope">
-                <el-input v-model="scope.row.employer" placeholder="工作单位" size="small" />
-              </template>
-            </el-table-column>
-            <el-table-column label="职业" align="center" min-width="130">
-              <template slot-scope="scope">
-                <el-input v-model="scope.row.occupation" placeholder="职业" size="small" />
-              </template>
-            </el-table-column>
-            <el-table-column label="健康状态" align="center" width="130">
-              <template slot-scope="scope">
-                <el-select v-model="scope.row.healthStatus" placeholder="健康状态" size="small" style="width: 100%;">
+            </el-transfer>
+          </div>
+          
+          <div style="margin-top: 12px; color: #909399; font-size: 13px; text-align: center;">
+            <i class="el-icon-info"></i>
+            已选择 <span style="color: #409EFF; font-weight: 500;">{{ transferValue.length }}</span> 名学生
+          </div>
+        </el-col>
+
+        <!-- 右侧：认定信息表单 -->
+        <el-col :span="7">
+          <div style="padding: 16px; background: #fafafa; border-radius: 4px; border: 1px solid #e4e7ed;">
+            <div style="font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #409EFF;">
+              <i class="el-icon-edit-outline"></i> 认定信息
+            </div>
+            
+            <el-form ref="batchDifficultyForm" :model="batchDifficultyForm" label-width="90px" label-position="left" size="small">
+              <el-form-item label="困难类型" prop="difficultyTypeId" :rules="[{ required: true, message: '请选择困难类型', trigger: 'change' }]">
+                <el-select v-model="batchDifficultyForm.difficultyTypeId" placeholder="请选择" style="width: 100%" @change="handleBatchDifficultyTypeChange">
                   <el-option
-                    v-for="dict in dict.type.sys_health_status || []"
+                    v-for="dict in dict.type.sys_difficulty_type"
                     :key="dict.value"
                     :label="dict.label"
                     :value="dict.value"
                   />
                 </el-select>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" align="center" width="100" fixed="right">
-              <template slot-scope="scope">
-                <el-button v-if="!detailMode" type="text" size="mini" @click="removeFamilyMember(scope.$index)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div v-if="familyMembers.length === 0" style="margin-top: 8px; color: #909399; font-size: 13px;">
-            暂无家庭成员<span v-if="!detailMode">，请点击“添加成员”。</span>
-          </div>
-        </el-card>
-        </div>
-
-        <div v-show="activeTab === 'bank'">
-          <!-- 银行卡信息 -->
-          <el-card shadow="never" class="form-card" ref="bankCardSection">
-            <div slot="header" class="card-header">
-              <i class="el-icon-bank-card"></i>
-              <span>银行卡信息</span>
-              <el-button v-if="!detailMode" type="text" icon="el-icon-plus" @click="addBankCard" style="margin-left: 12px;">添加银行卡</el-button>
-            </div>
-            <el-table :data="bankCards" border size="small" style="width: 100%">
-              <el-table-column label="银行卡号" align="center" min-width="180">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.bankAccountNo" placeholder="请输入银行卡号" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="开户行" align="center" min-width="160">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.bankName" placeholder="请输入开户行" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="支行/网点" align="center" min-width="140">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.branchName" placeholder="可选" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="开卡人" align="center" min-width="120">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.accountHolder" placeholder="请输入开卡人" size="small" />
-                </template>
-              </el-table-column>
-              <el-table-column label="主卡" align="center" width="90">
-                <template slot-scope="scope">
-                  <el-switch
-                    v-model="scope.row.isPrimary"
-                    :active-value="1"
-                    :inactive-value="0"
-                    active-color="#13ce66"
-                    inactive-color="#dcdfe6"
-                    @change="val => handlePrimaryChange(scope.$index, val)"
-                    :disabled="detailMode"
-                    size="small"
+              </el-form-item>
+              
+              <el-form-item label="困难等级" prop="difficultyLevelId" :rules="[{ required: true, message: '请选择困难等级', trigger: 'change' }]">
+                <el-select v-model="batchDifficultyForm.difficultyLevelId" placeholder="请选择" style="width: 100%">
+                  <el-option
+                    v-for="dict in dict.type.sys_difficulty_level"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
                   />
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" align="center" width="100" fixed="right">
-                <template slot-scope="scope">
-                  <el-button v-if="!detailMode" type="text" size="mini" @click="removeBankCard(scope.$index)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-            <div v-if="bankCards.length === 0" style="margin-top: 8px; color: #909399; font-size: 13px;">
-              暂无银行卡信息<span v-if="!detailMode">，请点击“添加银行卡”。</span>
-            </div>
-          </el-card>
-        </div>
-
-        <div v-show="activeTab === 'report'">
-          <!-- 助学金申请表 -->
-          <el-card shadow="never" class="form-card report-card">
-            <div slot="header" class="card-header">
-              <i class="el-icon-document"></i>
-              <span>普通高中国家助学金申请表</span>
-              <div style="margin-left: auto; display: flex; gap: 10px;">
-                <el-button
-                  type="text"
-                  icon="el-icon-view"
-                  @click="openReportInNewWindow"
-                  size="small"
-                  :disabled="!reportUrl"
-                >新窗口打开</el-button>
-                <el-button
-                  type="text"
-                  icon="el-icon-printer"
-                  @click="printReport"
-                  size="small"
-                  :disabled="!reportUrl"
-                >打印</el-button>
-                <el-button
-                  type="text"
-                  icon="el-icon-download"
-                  @click="exportReport"
-                  size="small"
-                  :disabled="!reportUrl"
-                >导出PDF</el-button>
-              </div>
-            </div>
-            <div class="report-preview-container">
-              <!-- 错误提示 -->
-              <div v-if="reportError" class="report-error">
-                <el-alert
-                  title="报表加载失败"
-                  type="error"
-                  :description="reportError"
-                  show-icon
-                  :closable="false"
-                >
-                  <el-button slot="action" type="text" @click="retryLoadReport">重试</el-button>
-                  <el-button slot="action" type="text" @click="openReportInNewWindow" style="margin-left: 10px;">新窗口打开</el-button>
-                </el-alert>
-              </div>
-              <!-- iframe预览 -->
-              <i-frame
-                v-else-if="reportUrl"
-                ref="reportIframe"
-                :src="reportUrl"
-                class="report-iframe-wrapper"
-                @iframe-load="onReportIframeLoad"
-              ></i-frame>
-              <!-- 加载中或等待生成URL -->
-              <div v-else-if="form.id" class="report-empty">
-                <el-empty description="正在生成报表..." :image-size="100"></el-empty>
-              </div>
-            </div>
-          </el-card>
-        </div>
-        </el-form>
-      </div>
-      <div slot="footer" class="dialog-footer">
-        <template v-if="!detailMode">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </template>
-        <template v-else>
-          <el-button @click="cancel">关 闭</el-button>
-        </template>
-      </div>
-    </el-dialog>
-
-    <!-- 批量认定困难类型对话框 -->
-    <el-dialog title="批量认定困难类型" :visible.sync="batchDifficultyOpen" width="500px" append-to-body>
-      <el-form ref="batchDifficultyForm" :model="batchDifficultyForm" label-width="120px">
-        <el-alert
-          :title="`已选择 ${selectedStudentNames.length} 名学生，将批量更新选中学生的困难认定信息，未填写的字段将保持不变。`"
-          type="info"
-          show-icon
-          :closable="false"
-          style="margin-bottom: 15px"
-        />
-        <div v-if="selectedStudentNames.length > 0" style="margin-bottom: 20px; padding: 10px; background: #f5f7fa; border-radius: 4px;">
-          <div style="font-weight: 600; margin-bottom: 8px; color: #303133;">已选择的学生：</div>
-          <div style="color: #606266; line-height: 1.8;">
-            <span v-for="(name, index) in selectedStudentNames" :key="index" style="display: inline-block; margin-right: 10px;">
-              {{ name }}<span v-if="index < selectedStudentNames.length - 1">、</span>
-            </span>
+                </el-select>
+              </el-form-item>
+              
+              <el-form-item label="是否脱贫户" prop="isPovertyReliefFamily" v-if="batchDifficultyForm.isPovertyReliefFamily">
+                <el-radio-group v-model="batchDifficultyForm.isPovertyReliefFamily" disabled size="small">
+                  <el-radio label="1">是</el-radio>
+                  <el-radio label="0">否</el-radio>
+                </el-radio-group>
+                <div style="margin-top: 4px; color: #909399; font-size: 12px; line-height: 1.5;">
+                  <i class="el-icon-info"></i> 根据困难类型自动设置
+                </div>
+              </el-form-item>
+              
+              <el-form-item label="脱贫年份" prop="povertyReliefYear" v-if="batchDifficultyForm.isPovertyReliefFamily === '1'" :rules="[{ required: true, message: '请选择脱贫年份', trigger: 'change' }]">
+                <el-date-picker
+                  v-model="batchDifficultyForm.povertyReliefYear"
+                  type="year"
+                  placeholder="请选择脱贫年份"
+                  value-format="yyyy"
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-form>
           </div>
-        </div>
-        <el-form-item label="困难类型" prop="difficultyTypeId">
-          <el-select v-model="batchDifficultyForm.difficultyTypeId" placeholder="请选择困难类型（留空则不更新）" clearable style="width: 100%">
-            <el-option
-              v-for="dict in dict.type.sys_difficulty_type"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="困难等级" prop="difficultyLevelId">
-          <el-select v-model="batchDifficultyForm.difficultyLevelId" placeholder="请选择困难等级（留空则不更新）" clearable style="width: 100%">
-            <el-option
-              v-for="dict in dict.type.sys_difficulty_level"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="是否脱贫户" prop="isPovertyReliefFamily">
-          <el-select v-model="batchDifficultyForm.isPovertyReliefFamily" placeholder="请选择（留空则不更新）" clearable style="width: 100%">
-            <el-option label="是" value="1" />
-            <el-option label="否" value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="脱贫年份" prop="povertyReliefYear" v-if="batchDifficultyForm.isPovertyReliefFamily === '1'">
-          <el-date-picker
-            v-model="batchDifficultyForm.povertyReliefYear"
-            type="year"
-            placeholder="请选择脱贫年份"
-            value-format="yyyy"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
+        </el-col>
+      </el-row>
+      </div>
+      
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitBatchDifficulty">确 定</el-button>
-        <el-button @click="cancelBatchDifficulty">取 消</el-button>
+        <el-button @click="cancelBatchDifficulty" size="medium">取 消</el-button>
+        <el-button type="primary" @click="submitBatchDifficulty" :disabled="transferValue.length === 0" size="medium">
+          <i class="el-icon-check"></i> 确定认定
+        </el-button>
       </div>
     </el-dialog>
   </div>
@@ -825,6 +448,21 @@ export default {
         isPovertyReliefFamily: null,
         povertyReliefYear: null
       },
+      // 穿梭框相关数据
+      transferData: [], // 未认定学生列表
+      transferValue: [], // 选中的学生ID列表
+      transferLoading: false,
+      // 筛选条件
+      transferFilter: {
+        schoolStage: [], // 学段：小学、初中、高中
+        name: '' // 姓名搜索
+      },
+      // 学段选项
+      schoolStageOptions: [
+        { label: '小学', value: 'primary' },
+        { label: '初中', value: 'junior' },
+        { label: '高中', value: 'senior' }
+      ],
       // 家庭成员
       relationOptions: [
         { value: '父亲', label: '父亲' },
@@ -942,6 +580,23 @@ export default {
           this.form.povertyReliefYear = value
         }
       }
+    },
+    /** 脱贫年份字符串（用于 el-date-picker，确保始终是字符串类型） */
+    povertyReliefYearString: {
+      get() {
+        if (!this.form || !this.form.povertyReliefYear) {
+          return null
+        }
+        // 确保返回字符串类型
+        const value = this.form.povertyReliefYear
+        return typeof value === 'string' ? value : String(value)
+      },
+      set(value) {
+        // el-date-picker 返回的是字符串，直接赋值
+        if (this.form) {
+          this.form.povertyReliefYear = value
+        }
+      }
     }
   },
   watch: {
@@ -953,6 +608,11 @@ export default {
     }
   },
   created() {
+    // 检查是否有刷新标记（从表单页面保存后返回）
+    if (this.$route.query.refresh) {
+      console.log('[Students List] 检测到刷新标记，将刷新列表');
+    }
+    
     this.getList();
     this.getYearSemesterList();
     this.getSchoolPlanList();
@@ -961,6 +621,14 @@ export default {
       // 可以从环境变量或系统配置中获取
       // this.reportId = process.env.VUE_APP_REPORT_ID || ''
     }
+  },
+  mounted() {
+    // 监听学生信息保存事件，刷新列表
+    this.$EventBus.$on('refreshStudentList', this.handleRefreshList);
+  },
+  beforeDestroy() {
+    // 移除事件监听，防止内存泄漏
+    this.$EventBus.$off('refreshStudentList', this.handleRefreshList);
   },
   methods: {
     /** 查询学年学期列表 */
@@ -1045,6 +713,11 @@ export default {
         this.loading = false
       })
     },
+    /** 处理列表刷新事件 */
+    handleRefreshList() {
+      console.log('[Students Index] 接收到刷新事件，刷新学生列表');
+      this.getList();
+    },
     // 取消按钮
     cancel() {
       this.open = false
@@ -1062,6 +735,11 @@ export default {
         idCardNo: null,
         gender: null,
         ethnicity: null,
+        birthday: null,
+        phone: null,
+        politicalStatus: null,
+        enrollmentDate: null,
+        isEthnicClass: '0',
         domicile: null,
         regionCodes: [],
         village: null,
@@ -1071,6 +749,7 @@ export default {
         gradeId: null,
         classId: null,
         studyStatus: null,
+        lastGradeUpdate: null,
         difficultyTypeId: null,
         difficultyLevelId: null,
         isPovertyReliefFamily: '0',
@@ -1170,72 +849,30 @@ export default {
     },
     /** 新增按钮操作 */
     handleAdd() {
-      this.reset()
-      this.detailMode = false
-      this.open = true
-      this.title = "添加困难学生基础信息"
-      // 清空级联选项
-      this.gradeOptions = []
-      this.classOptions = []
+      this.$router.push({
+        path: '/system/students-form/index',
+        query: {}
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      this.reset()
-      this.detailMode = false
-      const id = row.id || this.ids
-      getStudents(id).then(response => {
-        this.form = response.data
-        const resolvedSemesterId = this.form.currentYearSemesterId || this.form.yearSemesterId || this.currentYearSemesterId
-        this.$set(this.form, 'yearSemesterId', resolvedSemesterId)
-        this.$set(this.form, 'currentYearSemesterId', resolvedSemesterId || null)
-        // 编辑时，默认显示原有地址，不显示级联选择器
-        this.isEditingAddress = false
-        // 将脱贫年份从数字转换为字符串（el-date-picker 需要字符串格式）
-        if (this.form.povertyReliefYear !== null && this.form.povertyReliefYear !== undefined) {
-          this.form.povertyReliefYear = String(this.form.povertyReliefYear)
-        }
-        // 判断是否显示脱贫年份（根据困难类型自动判断）
-        if (this.form.difficultyTypeId) {
-          const isPovertyReliefType = this.isPovertyReliefDifficultyType(this.form.difficultyTypeId)
-          this.showPovertyReliefYear = isPovertyReliefType
-          if (isPovertyReliefType) {
-            this.form.isPovertyReliefFamily = '1'
-          } else {
-            this.form.isPovertyReliefFamily = this.form.isPovertyReliefFamily || '0'
-          }
-        } else {
-          this.form.isPovertyReliefFamily = this.form.isPovertyReliefFamily || '0'
-          this.showPovertyReliefYear = false
-        }
-        // 如果有学制ID，加载对应的年级列表
-        if (this.form.schoolingPlanId) {
-          getGradeList(this.form.schoolingPlanId).then(res => {
-            this.gradeOptions = res.data || []
-          }).catch(error => {
-            console.error('获取年级列表失败:', error)
-            this.gradeOptions = []
-          })
-        }
-        // 如果有年级ID，加载对应的班级列表
-        if (this.form.gradeId) {
-          getClassList(this.form.gradeId).then(res => {
-            this.classOptions = res.data || []
-          }).catch(error => {
-            console.error('获取班级列表失败:', error)
-            this.classOptions = []
-          })
-        }
-        this.familyMembers = (response.data && response.data.familyMembers) ? response.data.familyMembers : []
-        this.bankCards = (response.data && response.data.bankCards) ? response.data.bankCards : []
-        this.open = true
-        this.title = "修改困难学生基础信息"
-      }).catch(error => {
-        console.error('获取学生记录失败:', error)
-        this.$modal.msgError('获取学生记录失败')
-      })
+      this.$router.push({
+        path: '/system/students-form/index',
+        query: { id: row.id }
+      });
     },
-    /** 姓名列点击：打开详情（复用编辑弹窗） */
+    /** 姓名列点击：打开详情页（只读模式） */
     openStudentDetail(row) {
+      this.$router.push({
+        path: '/system/students-form/index',
+        query: { 
+          id: row.id,
+          mode: 'view'  // 添加 mode 参数标识为详情查看模式
+        }
+      });
+    },
+    /** 原有的详情逻辑（已废弃，保留注释）
+    openStudentDetailOld(row) {
       this.detailMode = true
       this.reset()
       const id = row.id || this.ids
@@ -1374,6 +1011,7 @@ export default {
     addBankCard() {
       this.bankCards.push({
         bankAccountNo: '',
+        bankType: '信用社',
         bankName: '',
         branchName: '',
         accountHolder: this.form.name || '',
@@ -1525,61 +1163,152 @@ export default {
     },
     /** 批量认定困难类型 */
     handleBatchDifficulty() {
-      if (this.ids.length === 0) {
-        this.$modal.msgWarning('请先选择要认定的学生');
-        return;
-      }
-      // 根据选中的ids获取学生名字
-      this.selectedStudentNames = this.studentsList
-        .filter(student => this.ids.includes(student.id))
-        .map(student => student.name)
-        .filter(name => name) // 过滤空名字
+      // 不再需要选择学生，直接打开对话框
       this.batchDifficultyForm = {
         difficultyTypeId: null,
         difficultyLevelId: null,
         isPovertyReliefFamily: null,
         povertyReliefYear: null
+      };
+      this.transferValue = [];
+      this.transferFilter = {
+        schoolStage: [],
+        name: ''
+      };
+      this.batchDifficultyOpen = true;
+    },
+    /** 加载未认定学生列表 */
+    loadUnrecognizedStudents() {
+      this.transferLoading = true;
+      // 调用后端接口获取未认定学生列表
+      listStudents({ 
+        unrecognized: true,  // 标记只查询未认定的学生
+        pageNum: 1,
+        pageSize: 10000 // 获取所有
+      }).then(response => {
+        let students = response.rows || [];
+        
+        // 前端过滤：根据学段和姓名筛选
+        if (this.transferFilter.schoolStage.length > 0) {
+          students = students.filter(student => {
+            const stage = this.getSchoolStage(student.schoolingPlanName, student.schoolingYears);
+            return this.transferFilter.schoolStage.includes(stage);
+          });
+        }
+        
+        if (this.transferFilter.name) {
+          const searchName = this.transferFilter.name.toLowerCase();
+          students = students.filter(student => {
+            return student.name && student.name.toLowerCase().includes(searchName);
+          });
+        }
+        
+        this.transferData = students.map(student => ({
+          id: student.id,
+          label: student.name,
+          gradeName: `${student.gradeName || ''} ${student.className || ''}`.trim(),
+          schoolStage: this.getSchoolStage(student.schoolingPlanName, student.schoolingYears)
+        }));
+        this.transferLoading = false;
+      }).catch(() => {
+        this.$message.error('获取学生列表失败');
+        this.transferLoading = false;
+      });
+    },
+    /** 根据学制名称或学制年限判断学段 */
+    getSchoolStage(schoolingPlanName, schoolingYears) {
+      // 优先根据学制名称判断（更准确）
+      if (schoolingPlanName) {
+        const name = schoolingPlanName.toLowerCase();
+        if (name.includes('小学')) return 'primary';
+        if (name.includes('初中')) return 'junior';
+        if (name.includes('高中')) return 'senior';
       }
-      this.batchDifficultyOpen = true
+      
+      // 降级到根据学制年限判断
+      if (schoolingYears) {
+        const years = parseInt(schoolingYears);
+        if (years === 6) return 'primary';  // 小学通常6年
+        if (years === 3) return 'junior';    // 初中通常3年
+        if (years === 4) return 'senior';    // 高中通常3-4年
+      }
+      
+      return 'unknown';
+    },
+    /** 处理穿梭框筛选 */
+    handleTransferFilter() {
+      // 重新加载并筛选数据
+      this.loadUnrecognizedStudents();
+    },
+    /** 处理批量认定困难类型变化 */
+    handleBatchDifficultyTypeChange(value) {
+      // 前端仅UI展示，不做业务判断，业务逻辑由后端处理
+      if (!value) {
+        this.batchDifficultyForm.isPovertyReliefFamily = null;
+        return;
+      }
+      
+      // 前端只用于显示预览，根据字典标签判断
+      const difficultyType = this.dict.type.sys_difficulty_type.find(dict => dict.value === value);
+      if (!difficultyType) {
+        this.batchDifficultyForm.isPovertyReliefFamily = null;
+        return;
+      }
+      
+      const label = difficultyType.label || '';
+      const isPovertyReliefType = label.includes('脱贫');
+      // 仅用于UI显示，实际值由后端计算
+      this.batchDifficultyForm.isPovertyReliefFamily = isPovertyReliefType ? '1' : '0';
+      
+      // 如果不是脱贫户，清空脱贫年份
+      if (!isPovertyReliefType) {
+        this.batchDifficultyForm.povertyReliefYear = null;
+      }
     },
     /** 提交批量认定 */
     submitBatchDifficulty() {
+      if (this.transferValue.length === 0) {
+        this.$message.warning('请选择需要认定的学生');
+        return;
+      }
+
       this.$refs["batchDifficultyForm"].validate(valid => {
         if (valid) {
-          // 验证脱贫年份
-          if (this.batchDifficultyForm.isPovertyReliefFamily === '1' && !this.batchDifficultyForm.povertyReliefYear) {
-            this.$modal.msgError('选择脱贫户时必须填写脱贫年份');
-            return;
-          }
-
+          // 注意：不传递 isPovertyReliefFamily，由后端根据 difficultyTypeId 自动判断
+          // 后端会根据困难类型字典标签自动设置 isPovertyReliefFamily
           const params = {
-            ids: this.ids,
-            difficultyTypeId: this.batchDifficultyForm.difficultyTypeId || null,
-            difficultyLevelId: this.batchDifficultyForm.difficultyLevelId || null,
-            isPovertyReliefFamily: this.batchDifficultyForm.isPovertyReliefFamily || null,
+            studentIds: this.transferValue,  // 使用 studentIds 字段名，与后端 DTO 一致
+            difficultyTypeId: this.batchDifficultyForm.difficultyTypeId,
+            difficultyLevelId: this.batchDifficultyForm.difficultyLevelId,
             povertyReliefYear: this.batchDifficultyForm.povertyReliefYear ? parseInt(this.batchDifficultyForm.povertyReliefYear) : null
-          }
+            // 不传递 isPovertyReliefFamily，由后端根据 difficultyTypeId 自动计算
+          };
 
           batchUpdateDifficulty(params).then(response => {
-            this.$modal.msgSuccess('批量认定成功')
-            this.batchDifficultyOpen = false
-            this.getList()
+            this.$modal.msgSuccess(response.msg || `批量认定成功，共 ${this.transferValue.length} 名学生`);
+            this.batchDifficultyOpen = false;
+            this.getList();
           }).catch(() => {
-            this.$modal.msgError('批量认定失败')
-          })
+            this.$modal.msgError('批量认定失败');
+          });
         }
-      })
+      });
     },
     /** 取消批量认定 */
     cancelBatchDifficulty() {
-      this.batchDifficultyOpen = false
-      this.selectedStudentNames = []
+      this.batchDifficultyOpen = false;
+      this.transferValue = [];
+      this.transferData = [];
+      this.transferFilter = {
+        schoolStage: [],
+        name: ''
+      };
       this.batchDifficultyForm = {
         difficultyTypeId: null,
         difficultyLevelId: null,
         isPovertyReliefFamily: null,
         povertyReliefYear: null
-      }
+      };
     },
     /** 生成报表预览URL */
     generateReportUrl(studentId) {
@@ -1683,6 +1412,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
+/* 整个页面使用思源黑体 */
+* {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', '微软雅黑', sans-serif;
+}
+
 .query-table-wrapper {
   margin-bottom: 12px;
   padding: 16px 20px 20px;
@@ -2012,6 +1746,155 @@ export default {
 
   @media (max-width: 768px) {
     height: 400px;
+  }
+}
+
+// 横线标题样式
+.section-title {
+  position: relative;
+  margin: 24px 0 16px 0;
+  padding-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: linear-gradient(180deg, #409EFF 0%, #66B1FF 100%);
+    border-radius: 2px;
+  }
+  
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #D9D9D9 0%, transparent 100%);
+    margin-left: 8px;
+  }
+}
+
+// 表单布局优化
+.form-layout {
+  ::v-deep .el-form-item {
+    margin-bottom: 16px;
+    
+    .el-form-item__label {
+      padding: 0 8px 0 0;
+      font-weight: 500;
+      font-size: 13px;
+      color: #303133;
+      line-height: 32px;
+      white-space: nowrap;
+    }
+    
+    .el-form-item__content {
+      line-height: 32px;
+    }
+  }
+  
+  .el-row {
+    margin-bottom: 8px;
+  }
+}
+
+// Tab选项卡样式
+.section-tabs {
+  ::v-deep .el-tabs__nav {
+    background: transparent;
+    border: none;
+  }
+  
+  ::v-deep .el-tabs__item {
+    padding: 0 12px !important;
+    height: 40px;
+    line-height: 40px;
+    margin: 0 4px 0 0;
+    border: 1px solid #e4e7ed !important;
+    border-radius: 4px 4px 0 0;
+    background: #f5f7fa;
+    font-size: 13px;
+    
+    &:hover {
+      color: #409EFF;
+      background: #f0f5ff;
+    }
+  }
+  
+  ::v-deep .is-active {
+    background: #fff !important;
+    border-color: #409EFF !important;
+  }
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+// Tab样式优化
+::v-deep .el-drawer {
+  display: flex;
+  flex-direction: column;
+  
+  .el-drawer__header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .el-drawer__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .el-alert {
+    margin-bottom: 16px;
+    margin: 0;
+  }
+  
+  .section-nav {
+    padding: 12px 24px 0 24px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  
+  .form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 24px;
+    max-height: none;
+    
+    // 自定义滑块
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #999;
+      }
+    }
   }
 }
 </style>

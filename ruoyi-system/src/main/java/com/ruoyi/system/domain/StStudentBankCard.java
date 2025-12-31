@@ -4,6 +4,9 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.core.domain.BaseEntity;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+
 /**
  * 学生银行卡信息对象 st_student_bank_cards
  */
@@ -13,8 +16,12 @@ public class StStudentBankCard extends BaseEntity {
     private Long id;
     /** 学生ID */
     private Long studentId;
-    /** 银行卡号 */
+    /** 银行卡号（19位数字） */
+    @NotBlank(message = "银行卡号不能为空")
+    @Pattern(regexp = "^\\d{19}$", message = "银行卡号必须为19位数字")
     private String bankAccountNo;
+    /** 所属银行（默认为信用社） */
+    private String bankType;
     /** 开户行（银行名称或开户行全称） */
     private String bankName;
     /** 支行/网点名称 */
@@ -58,6 +65,14 @@ public class StStudentBankCard extends BaseEntity {
 
     public void setBankAccountNo(String bankAccountNo) {
         this.bankAccountNo = bankAccountNo;
+    }
+
+    public String getBankType() {
+        return bankType;
+    }
+
+    public void setBankType(String bankType) {
+        this.bankType = bankType;
     }
 
     public String getBankName() {

@@ -1215,11 +1215,132 @@
       </div>
     </el-dialog>
 
+    <!-- 同步进度对话框 -->
+    <el-dialog
+      title="同步进度"
+      :visible.sync="syncProgressDialogVisible"
+      width="600px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="syncProgress.status === 'completed' || syncProgress.status === 'failed'"
+      append-to-body
+    >
+      <div class="sync-progress-container">
+        <!-- 进度条 -->
+        <div class="progress-section">
+          <el-progress
+            :percentage="syncProgress.percentage || 0"
+            :status="getProgressStatus()"
+            :stroke-width="24"
+          >
+            <template slot="default" slot-scope="{ percentage }">
+              <span style="font-size: 14px; font-weight: 600; color: #303133;">
+                {{ percentage }}%
+              </span>
+            </template>
+          </el-progress>
+        </div>
+
+        <!-- 状态信息 -->
+        <div class="status-section">
+          <div class="status-item">
+            <i class="el-icon-info" style="color: #409EFF; margin-right: 8px;"></i>
+            <span class="status-label">状态：</span>
+            <el-tag
+              :type="getStatusTagType()"
+              size="small"
+              effect="plain"
+            >
+              {{ getStatusText() }}
+            </el-tag>
+          </div>
+          <div class="status-item" v-if="syncProgress.message">
+            <i class="el-icon-document" style="color: #67C23A; margin-right: 8px;"></i>
+            <span class="status-label">当前操作：</span>
+            <span class="status-value">{{ syncProgress.message }}</span>
+          </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="stats-section">
+          <el-row :gutter="16">
+            <el-col :span="8">
+              <div class="stat-card">
+                <div class="stat-icon" style="background-color: #409EFF;">
+                  <i class="el-icon-document"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">{{ syncProgress.total || 0 }}</div>
+                  <div class="stat-label">总数</div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-card">
+                <div class="stat-icon" style="background-color: #67C23A;">
+                  <i class="el-icon-success"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">{{ syncProgress.success || 0 }}</div>
+                  <div class="stat-label">成功</div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-card">
+                <div class="stat-icon" style="background-color: #F56C6C;">
+                  <i class="el-icon-error"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-value">{{ syncProgress.failed || 0 }}</div>
+                  <div class="stat-label">失败</div>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+
+        <!-- 耗时信息 -->
+        <div class="time-section" v-if="syncProgress.startTime">
+          <div class="time-item">
+            <span class="time-label">开始时间：</span>
+            <span class="time-value">{{ formatTime(syncProgress.startTime) }}</span>
+          </div>
+          <div class="time-item" v-if="syncProgress.endTime">
+            <span class="time-label">结束时间：</span>
+            <span class="time-value">{{ formatTime(syncProgress.endTime) }}</span>
+          </div>
+          <div class="time-item" v-if="syncProgress.endTime && syncProgress.startTime">
+            <span class="time-label">耗时：</span>
+            <span class="time-value">{{ calculateDuration() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div slot="footer" class="dialog-footer">
+        <el-button
+          v-if="syncProgress.status === 'completed' || syncProgress.status === 'failed'"
+          type="primary"
+          @click="closeSyncProgressDialog"
+        >
+          关 闭
+        </el-button>
+        <el-button
+          v-else
+          type="info"
+          plain
+          disabled
+        >
+          同步中，请稍候...
+        </el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
-import { listAidedStudentInfo, syncStudentToAidedTable, syncAllStudentsToAidedTable } from "@/api/system/aidedStudentInfo";
+import { listAidedStudentInfo, syncStudentToAidedTable, syncAllStudentsToAidedTable, getSyncProgress } from "@/api/system/aidedStudentInfo";
 import { getCurrentYearSemester } from "@/api/system/yearSemester";
 import { getSubsidyPackages, getAvailableBudgets, getHistoricalBudgets, createSubsidy } from "@/api/system/subsidy";
 import { getStudents, getSchoolPlanList, getGradeList, getClassList } from "@/api/system/students";
@@ -1375,6 +1496,20 @@ export default {
         headers: {},
         url: '',
         fileList: []
+      },
+      // 同步进度相关
+      syncProgressDialogVisible: false,
+      syncProgressTimer: null, // 轮询定时器
+      syncProgress: {
+        total: 0,
+        processed: 0,
+        success: 0,
+        failed: 0,
+        percentage: 0,
+        status: 'not_started', // not_started, running, completed, failed
+        message: '',
+        startTime: null,
+        endTime: null
       }
     };
   },
@@ -1494,43 +1629,39 @@ export default {
         return;
       }
       this.$modal.confirm('是否确认同步所有学生数据？').then(() => {
-        return syncAllStudentsToAidedTable(params.academicYear, params.semester);
-      }).then(response => {
-        this.getList();
-        // 使用Notification显示同步结果
-        if (response.data && response.data.insertedCount !== undefined) {
-          const result = response.data;
-          let message = '';
-          if (result.insertedCount > 0 && result.updatedCount > 0) {
-            message = `同步完成，已同步${result.insertedCount}人，更新${result.updatedCount}人！`;
-          } else if (result.insertedCount > 0) {
-            message = `同步完成，已同步${result.insertedCount}人！`;
-          } else if (result.updatedCount > 0) {
-            message = `同步完成，已更新${result.updatedCount}人！`;
+        // 初始化进度数据
+        this.syncProgress = {
+          total: 0,
+          processed: 0,
+          success: 0,
+          failed: 0,
+          percentage: 0,
+          status: 'running',
+          message: '开始同步...',
+          startTime: Date.now(),
+          endTime: null
+        };
+        // 显示进度对话框
+        this.syncProgressDialogVisible = true;
+        
+        // 发起同步请求
+        syncAllStudentsToAidedTable(params.academicYear, params.semester).then(response => {
+          // 同步请求已发起，开始轮询进度
+          this.startProgressPolling(params.academicYear, params.semester);
+        }).catch(error => {
+          // 如果是分布式锁错误，尝试查询进度
+          if (error.msg && error.msg.indexOf('正在进行') !== -1) {
+            this.startProgressPolling(params.academicYear, params.semester);
           } else {
-            message = '同步完成，无数据变更！';
+            this.syncProgress.status = 'failed';
+            this.syncProgress.message = error.msg || error.message || '同步失败';
+            this.$notify({
+              title: '同步失败',
+              message: this.syncProgress.message,
+              type: 'error',
+              duration: 4500
+            });
           }
-          this.$notify({
-            title: '同步成功',
-            message: message,
-            type: 'success',
-            duration: 4500
-          });
-        } else {
-          // 兼容旧格式
-          this.$notify({
-            title: '同步成功',
-            message: response.msg || '同步成功',
-            type: 'success',
-            duration: 4500
-          });
-        }
-      }).catch(error => {
-        this.$notify({
-          title: '同步失败',
-          message: error.msg || error.message || '同步失败',
-          type: 'error',
-          duration: 4500
         });
       });
     },
@@ -2694,7 +2825,132 @@ export default {
         return;
       }
       this.$refs.upload.submit();
+    },
+    
+    // ========== 同步进度相关方法 ==========
+    /** 开始轮询进度 */
+    startProgressPolling(academicYear, semester) {
+      // 清除之前的定时器
+      if (this.syncProgressTimer) {
+        clearInterval(this.syncProgressTimer);
+      }
+      
+      // 立即查询一次
+      this.queryProgress(academicYear, semester);
+      
+      // 设置定时器，每2秒查询一次
+      this.syncProgressTimer = setInterval(() => {
+        this.queryProgress(academicYear, semester);
+      }, 2000);
+    },
+    
+    /** 查询进度 */
+    queryProgress(academicYear, semester) {
+      getSyncProgress(academicYear, semester).then(response => {
+        if (response.data) {
+          this.syncProgress = response.data;
+          
+          // 如果同步完成或失败，停止轮询
+          if (this.syncProgress.status === 'completed' || this.syncProgress.status === 'failed') {
+            this.stopProgressPolling();
+            
+            // 刷新列表
+            this.getList();
+            
+            // 显示通知
+            if (this.syncProgress.status === 'completed') {
+              this.$notify({
+                title: '同步成功',
+                message: this.syncProgress.message || '同步完成',
+                type: 'success',
+                duration: 4500
+              });
+            }
+          }
+        }
+      }).catch(error => {
+        console.error('查询进度失败:', error);
+      });
+    },
+    
+    /** 停止轮询 */
+    stopProgressPolling() {
+      if (this.syncProgressTimer) {
+        clearInterval(this.syncProgressTimer);
+        this.syncProgressTimer = null;
+      }
+    },
+    
+    /** 关闭进度对话框 */
+    closeSyncProgressDialog() {
+      this.syncProgressDialogVisible = false;
+      this.stopProgressPolling();
+    },
+    
+    /** 获取进度条状态 */
+    getProgressStatus() {
+      if (this.syncProgress.status === 'completed') {
+        return 'success';
+      } else if (this.syncProgress.status === 'failed') {
+        return 'exception';
+      }
+      return undefined;
+    },
+    
+    /** 获取状态标签类型 */
+    getStatusTagType() {
+      const statusMap = {
+        'not_started': 'info',
+        'running': 'warning',
+        'completed': 'success',
+        'failed': 'danger'
+      };
+      return statusMap[this.syncProgress.status] || 'info';
+    },
+    
+    /** 获取状态文本 */
+    getStatusText() {
+      const statusMap = {
+        'not_started': '未开始',
+        'running': '同步中',
+        'completed': '已完成',
+        'failed': '失败'
+      };
+      return statusMap[this.syncProgress.status] || '未知';
+    },
+    
+    /** 格式化时间 */
+    formatTime(timestamp) {
+      if (!timestamp) return '-';
+      const date = new Date(timestamp);
+      const Y = date.getFullYear();
+      const M = (date.getMonth() + 1).toString().padStart(2, '0');
+      const D = date.getDate().toString().padStart(2, '0');
+      const h = date.getHours().toString().padStart(2, '0');
+      const m = date.getMinutes().toString().padStart(2, '0');
+      const s = date.getSeconds().toString().padStart(2, '0');
+      return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+    },
+    
+    /** 计算耗时 */
+    calculateDuration() {
+      if (!this.syncProgress.startTime || !this.syncProgress.endTime) {
+        return '-';
+      }
+      const duration = this.syncProgress.endTime - this.syncProgress.startTime;
+      const seconds = Math.floor(duration / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      
+      if (minutes > 0) {
+        return `${minutes}分${remainingSeconds}秒`;
+      }
+      return `${remainingSeconds}秒`;
     }
+  },
+  beforeDestroy() {
+    // 组件销毁前清除定时器
+    this.stopProgressPolling();
   }
 };
 </script>
@@ -3387,6 +3643,116 @@ export default {
   color: #409EFF;
   font-size: 14px;
   padding: 0;
+}
+
+/* 同步进度对话框样式 */
+.sync-progress-container {
+  padding: 10px 0;
+}
+
+.progress-section {
+  margin-bottom: 25px;
+}
+
+.status-section {
+  margin-bottom: 25px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-label {
+  font-weight: 500;
+  color: #606266;
+  margin-right: 8px;
+}
+
+.status-value {
+  color: #303133;
+  flex: 1;
+}
+
+.stats-section {
+  margin-bottom: 25px;
+}
+
+.stats-section .stat-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.stats-section .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stats-section .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.stats-section .stat-icon i {
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.stats-section .stat-content {
+  flex: 1;
+}
+
+.stats-section .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stats-section .stat-label {
+  font-size: 13px;
+  color: #909399;
+}
+
+.time-section {
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.time-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.time-label {
+  font-weight: 500;
+  color: #606266;
+  margin-right: 8px;
+  min-width: 80px;
+}
+
+.time-value {
+  color: #303133;
 }
 </style>
 

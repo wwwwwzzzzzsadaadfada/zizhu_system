@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import com.ruoyi.system.domain.StStudents;
 
+import org.apache.ibatis.annotations.Param;
+
 /**
  * 困难学生基础信息Mapper接口
  * 
@@ -90,4 +92,29 @@ public interface StStudentsMapper
      * @return 结果
      */
     public int batchUpdateDifficultyInfo(Map<String, Object> params);
+
+    /**
+     * 根据身份证号查询学生
+     * 
+     * @param idCardNo 身份证号
+     * @return 学生信息
+     */
+    public StStudents selectByIdCardNo(String idCardNo);
+
+    /**
+     * 根据学籍号查询学生
+     * 
+     * @param studentNo 学籍号
+     * @return 学生信息
+     */
+    public StStudents selectByStudentNo(String studentNo);
+
+    /**
+     * 根据身份证号或学籍号查询学生（提高性能）
+     * 
+     * @param idCardNo 身份证号
+     * @param studentNo 学籍号
+     * @return 学生信息
+     */
+    public StStudents selectByIdCardNoOrStudentNo(@Param("idCardNo") String idCardNo, @Param("studentNo") String studentNo);
 }

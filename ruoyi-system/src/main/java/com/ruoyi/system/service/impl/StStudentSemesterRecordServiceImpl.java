@@ -6,10 +6,14 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.core.redis.RedisCache;
+import com.ruoyi.common.core.redis.RedisDistributedLock;
 import com.ruoyi.system.mapper.StStudentSemesterRecordMapper;
 import com.ruoyi.system.mapper.StStudentsBaseMapper;
 import com.ruoyi.system.mapper.StSemesterBudgetMapper;
@@ -22,6 +26,8 @@ import com.ruoyi.system.mapper.StStudentSubsidyDetailMapper;
 import com.ruoyi.system.mapper.StSchoolYearSemesterMapper;
 import com.ruoyi.system.domain.StSchoolYearSemester;
 import com.ruoyi.system.domain.SyncAidedStudentResult;
+import com.ruoyi.system.mapper.StAidedStudentInfoMapper;
+import com.ruoyi.system.domain.StAidedStudentInfo;
 /**
  * 学生学期认定记录Service业务层处理
  * 
@@ -31,6 +37,14 @@ import com.ruoyi.system.domain.SyncAidedStudentResult;
 @Service
 public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRecordService 
 {
+    private static final Logger logger = LoggerFactory.getLogger(StStudentSemesterRecordServiceImpl.class);
+    
+    /** 同步锁超时时间（秒） */
+    private static final long SYNC_LOCK_TIMEOUT = 600;
+    
+    /** 进度缓存超时时间（秒） */
+    private static final long PROGRESS_CACHE_TIMEOUT = 3600;
+    
     @Autowired
     private StStudentSemesterRecordMapper stStudentSemesterRecordMapper;
 
@@ -45,6 +59,15 @@ public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRec
 
     @Autowired
     private StSchoolYearSemesterMapper stSchoolYearSemesterMapper;
+    
+    @Autowired
+    private RedisCache redisCache;
+    
+    @Autowired
+    private RedisDistributedLock redisLock;
+    
+    @Autowired
+    private StAidedStudentInfoMapper stAidedStudentInfoMapper;
 
     /**
      * 查询学生学期认定记录
@@ -284,11 +307,17 @@ public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRec
      * @return 同步的结果
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public SyncAidedStudentResult syncStudentsToAidedTable(Long studentBaseId, String academicYear, String semester)
     {
         try
         {
+            // 数据验证：检查学生ID
+            if (studentBaseId == null || studentBaseId <= 0)
+            {
+                return new SyncAidedStudentResult("学生ID不能为空");
+            }
+            
             // 数据验证：检查学生是否存在
             StStudentsBase student = stStudentsBaseMapper.selectStStudentsBaseById(studentBaseId);
             if (student == null)
@@ -296,8 +325,8 @@ public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRec
                 return new SyncAidedStudentResult("学生不存在，无法同步");
             }
 
-            // 解析学年学期
-            String[] resolved = resolveAcademicYearAndSemester(academicYear, semester);
+            // 解析并验证学年学期
+            String[] resolved = resolveAndValidateAcademicYearAndSemester(academicYear, semester);
             
             // 检查该学生是否已存在受助信息（在同步前检查）
             boolean existsBefore = stStudentSemesterRecordMapper.checkAidedStudentExists(studentBaseId, resolved[0], resolved[1]);
@@ -336,63 +365,188 @@ public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRec
         }
         catch (Exception e)
         {
-            return new SyncAidedStudentResult("同步失败：" + e.getMessage());
+            return new SyncAidedStudentResult("同步失败，请联系管理员");
         }
     }
     
     /**
-     * 同步所有学生数据到受助学生信息表
+     * 同步所有学生数据到受助学生信息表（带分布式锁和进度反馈）
      * 
      * @param academicYear 学年
      * @param semester 学期
      * @return 同步的结果
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public SyncAidedStudentResult syncAllStudentsToAidedTable(String academicYear, String semester)
     {
+        // 解析并验证学年学期
+        String[] resolved = resolveAndValidateAcademicYearAndSemester(academicYear, semester);
+        String lockKey = "sync:aided:" + resolved[0] + ":" + resolved[1];
+        String progressKey = "sync:progress:" + resolved[0] + ":" + resolved[1];
+        String lockValue = null;
+        
         try
         {
-            // 解析学年学期
-            String[] resolved = resolveAcademicYearAndSemester(academicYear, semester);
+            // 尝试获取分布式锁
+            lockValue = redisLock.tryLock(lockKey, SYNC_LOCK_TIMEOUT);
+            if (lockValue == null)
+            {
+                return new SyncAidedStudentResult("当前有同步任务正在进行，请稍后再试或查看进度");
+            }
             
             // 数据验证：检查是否有学生数据
-            int totalStudents = stStudentsBaseMapper.selectStStudentsBaseList(new StStudentsBase()).size();
-            if (totalStudents == 0)
+            StStudentsBase checkQuery = new StStudentsBase();
+            List<StStudentsBase> allStudents = stStudentsBaseMapper.selectStStudentsBaseList(checkQuery);
+            if (allStudents == null || allStudents.isEmpty())
             {
                 return new SyncAidedStudentResult("没有可同步的学生数据");
             }
             
-            // 先更新已存在的学生
+            int totalCount = allStudents.size();
+            com.ruoyi.system.domain.SyncProgress progress = new com.ruoyi.system.domain.SyncProgress(totalCount);
+            progress.updateProgress(0, 0, 0, "开始同步所有学生...");
+            redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            
+            logger.info("开始同步所有学生，总数：{}, 学年：{}, 学期：{}", totalCount, resolved[0], resolved[1]);
+            
+            // 步骤1：更新已存在的学生（直接同步加密数据）
+            progress.updateProgress(0, 0, 0, "正在更新已存在的学生信息...");
+            redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            
             int updated = stStudentSemesterRecordMapper.updateExistingStudentsInAidedTable(resolved[0], resolved[1]);
             
-            // 再插入新学生
-            int inserted = stStudentSemesterRecordMapper.syncAllStudentsToAidedTable(resolved[0], resolved[1]);
+            // 步骤2：插入新学生（直接同步加密数据）
+            progress.updateProgress(updated, updated, 0, "正在新增学生信息...");
+            redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            
+            int inserted = stStudentSemesterRecordMapper.insertNewStudentsIntoAidedTable(resolved[0], resolved[1]);
+            
+            // 完成
+            progress.updateProgress(inserted + updated, inserted + updated, 0, 
+                String.format("同步完成！新增 %d 人，更新 %d 人", inserted, updated));
+            progress.complete();
+            redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            
+            logger.info("同步完成，新增：{}, 更新：{}, 耗时：{}s", inserted, updated, progress.getElapsedSeconds());
             
             return new SyncAidedStudentResult(inserted, updated);
         }
         catch (ServiceException e)
         {
+            logger.error("同步所有学生失败，academicYear={}, semester={}, error={}", 
+                        academicYear, semester, e.getMessage());
+            
+            // 更新进度为失败状态
+            com.ruoyi.system.domain.SyncProgress progress = redisCache.getCacheObject(progressKey);
+            if (progress != null)
+            {
+                progress.fail(e.getMessage());
+                redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            
             return new SyncAidedStudentResult(e.getMessage());
         }
         catch (Exception e)
         {
-            return new SyncAidedStudentResult("同步失败：" + e.getMessage());
+            logger.error("同步所有学生异常，academicYear={}, semester={}", 
+                        academicYear, semester, e);
+            
+            // 更新进度为失败状态
+            com.ruoyi.system.domain.SyncProgress progress = redisCache.getCacheObject(progressKey);
+            if (progress != null)
+            {
+                progress.fail("同步失败，请联系管理员");
+                redisCache.setCacheObject(progressKey, progress, (int)PROGRESS_CACHE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            
+            return new SyncAidedStudentResult("同步失败，请联系管理员");
+        }
+        finally
+        {
+            // 释放分布式锁
+            if (lockValue != null)
+            {
+                redisLock.releaseLock(lockKey, lockValue);
+                logger.info("释放同步锁：{}", lockKey);
+            }
         }
     }
 
     /**
-     * 解析/补全请求中的学年学期，默认回落到当前学期
+     * 获取同步进度
+     * 
+     * @param academicYear 学年
+     * @param semester 学期
+     * @return 进度信息
      */
-    private String[] resolveAcademicYearAndSemester(String academicYear, String semester)
+    @Override
+    public com.ruoyi.system.domain.SyncProgress getSyncProgress(String academicYear, String semester)
+    {
+        try
+        {
+            // 解析并验证学年学期
+            String[] resolved = resolveAndValidateAcademicYearAndSemester(academicYear, semester);
+            String progressKey = "sync:progress:" + resolved[0] + ":" + resolved[1];
+            
+            com.ruoyi.system.domain.SyncProgress progress = redisCache.getCacheObject(progressKey);
+            
+            if (progress == null)
+            {
+                // 如果没有进度信息，返回一个默认的
+                progress = new com.ruoyi.system.domain.SyncProgress();
+                progress.setStatus("not_started");
+                progress.setMessage("未找到同步任务记录");
+            }
+            
+            return progress;
+        }
+        catch (Exception e)
+        {
+            logger.error("获取同步进度失败", e);
+            com.ruoyi.system.domain.SyncProgress progress = new com.ruoyi.system.domain.SyncProgress();
+            progress.setStatus("error");
+            progress.setMessage("获取进度失败");
+            return progress;
+        }
+    }
+
+    /**
+     * 解析/补全/验证请求中的学年学期，默认回落到当前学期
+     */
+    private String[] resolveAndValidateAcademicYearAndSemester(String academicYear, String semester)
     {
         boolean missingYear = StringUtils.isBlank(academicYear);
         boolean missingSemester = StringUtils.isBlank(semester);
+        
+        // 如果两个参数都提供了，验证格式
         if (!missingYear && !missingSemester)
         {
+            // 验证学年格式：2025-2026
+            if (!academicYear.matches("^\\d{4}-\\d{4}$"))
+            {
+                throw new ServiceException("学年格式错误，应为 YYYY-YYYY 格式，如 2025-2026");
+            }
+            
+            // 验证学期值：1 或 2
+            if (!semester.matches("^[12]$"))
+            {
+                throw new ServiceException("学期值错误，应为 1 或 2");
+            }
+            
+            // 验证学年的连续性
+            String[] years = academicYear.split("-");
+            int startYear = Integer.parseInt(years[0]);
+            int endYear = Integer.parseInt(years[1]);
+            if (endYear - startYear != 1)
+            {
+                throw new ServiceException("学年格式错误，结束年份应比开始年份多1年");
+            }
+            
             return new String[] { academicYear, semester };
         }
 
+        // 如果缺少参数，使用当前学期填充
         StSchoolYearSemester currentSemester = stSchoolYearSemesterMapper.selectCurrentSemester(true);
         if (currentSemester == null || currentSemester.getSemester() == null)
         {
@@ -409,4 +563,6 @@ public class StStudentSemesterRecordServiceImpl implements IStStudentSemesterRec
 
         return new String[] { resolvedYear, resolvedSemester };
     }
+    
+
 }

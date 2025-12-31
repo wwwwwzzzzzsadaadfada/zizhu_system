@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="ethnicity"    column="ethnicity"    />
         <result property="domicile"    column="domicile"    />
         <result property="studentNo"    column="student_no"    />
+        <result property="phone"    column="phone"    />
         <result property="schoolingPlanId" column="schooling_plan_id" />
         <result property="gradeId" column="grade_id" />
         <result property="classId" column="class_id" />
@@ -28,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStStudentsBaseVo">
         select 
             sb.id, sb.name, sb.id_card_no, sb.gender, sb.ethnicity, sb.domicile,
-            sb.student_no, sb.schooling_plan_id, sb.grade_id, sb.class_id,
+            sb.student_no, sb.phone, sb.schooling_plan_id, sb.grade_id, sb.class_id,
             sb.current_year_semester_id,
             g.name as grade_name, c.class_name as class_name,
             sb.last_grade_update, sb.created_at, sb.updated_at,
@@ -92,6 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="ethnicity != null and ethnicity != ''">ethnicity,</if>
             <if test="domicile != null and domicile != ''">domicile,</if>
             <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="phone != null and phone != ''">phone,</if>
             <if test="schoolingPlanId != null">schooling_plan_id,</if>
             <if test="gradeId != null">grade_id,</if>
             <if test="classId != null">class_id,</if>
@@ -107,6 +109,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="ethnicity != null and ethnicity != ''">#{ethnicity},</if>
             <if test="domicile != null and domicile != ''">#{domicile},</if>
             <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="phone != null and phone != ''">#{phone},</if>
             <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
             <if test="gradeId != null">#{gradeId},</if>
             <if test="classId != null">#{classId},</if>
@@ -126,6 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="ethnicity != null and ethnicity != ''">ethnicity = #{ethnicity},</if>
             <if test="domicile != null and domicile != ''">domicile = #{domicile},</if>
             <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
             <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
             <if test="gradeId != null">grade_id = #{gradeId},</if>
             <if test="classId != null">class_id = #{classId},</if>

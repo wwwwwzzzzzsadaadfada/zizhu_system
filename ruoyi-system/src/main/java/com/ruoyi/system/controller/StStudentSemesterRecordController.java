@@ -194,4 +194,20 @@ public class StStudentSemesterRecordController extends BaseController
             return error(result.getErrorMessage());
         }
     }
+    
+    /**
+     * 获取同步进度
+     *
+     * @param academicYear 学年
+     * @param semester 学期
+     * @return 进度信息
+     */
+    @PreAuthorize("@ss.hasPermi('system:studentRecords:query')")
+    @GetMapping("/syncProgress/{academicYear}/{semester}")
+    public AjaxResult getSyncProgress(@PathVariable("academicYear") String academicYear,
+                                     @PathVariable("semester") String semester)
+    {
+        com.ruoyi.system.domain.SyncProgress progress = stStudentSemesterRecordService.getSyncProgress(academicYear, semester);
+        return success(progress);
+    }
 }

@@ -10,6 +10,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="idCardNo" column="id_card_no"/>
         <result property="gender" column="gender"/>
         <result property="ethnicity" column="ethnicity"/>
+        <result property="birthday" column="birthday"/>
+        <result property="phone" column="phone"/>
+        <result property="politicalStatus" column="political_status"/>
+        <result property="enrollmentDate" column="enrollment_date"/>
+        <result property="isEthnicClass" column="is_ethnic_class"/>
+        <result property="lastGradeUpdate" column="last_grade_update"/>
         <result property="domicile" column="domicile"/>
         <result property="studentNo" column="student_no"/>
         <result property="schoolingPlanId" column="schooling_plan_id"/>
@@ -40,6 +46,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             s.id_card_no,
             s.gender,
             s.ethnicity,
+            s.birthday,
+            s.phone,
+            s.political_status,
+            s.enrollment_date,
+            s.is_ethnic_class,
+            s.last_grade_update,
             s.domicile,
             s.student_no,
             s.schooling_plan_id,
@@ -92,6 +104,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="difficultyTypeId != null  and difficultyTypeId != ''"> and s.difficulty_type_id = #{difficultyTypeId}</if>
             <if test="difficultyLevelId != null  and difficultyLevelId != ''"> and s.difficulty_level_id = #{difficultyLevelId}</if>
             <if test="isPovertyReliefFamily != null  and isPovertyReliefFamily != ''"> and s.is_poverty_relief_family = #{isPovertyReliefFamily}</if>
+            <!-- 查询未认定的学生（用于批量认定功能） -->
+            <if test="unrecognized != null and unrecognized == true">
+                and (s.difficulty_type_id IS NULL OR s.difficulty_type_id = '')
+            </if>
             <if test="createdAt != null "> and s.created_at = #{createdAt}</if>
             <if test="updatedAt != null "> and s.updated_at = #{updatedAt}</if>
         </where>
@@ -109,6 +125,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="idCardNo != null and idCardNo != ''">id_card_no,</if>
             <if test="gender != null and gender != ''">gender,</if>
             <if test="ethnicity != null and ethnicity != ''">ethnicity,</if>
+            <if test="birthday != null">birthday,</if>
+            <if test="phone != null and phone != ''">phone,</if>
+            <if test="politicalStatus != null and politicalStatus != ''">political_status,</if>
+            <if test="enrollmentDate != null">enrollment_date,</if>
+            <if test="isEthnicClass != null and isEthnicClass != ''">is_ethnic_class,</if>
+            <if test="lastGradeUpdate != null">last_grade_update,</if>
             <if test="domicile != null and domicile != ''">domicile,</if>
             <if test="studentNo != null and studentNo != ''">student_no,</if>
             <if test="schoolingPlanId != null">schooling_plan_id,</if>
@@ -129,6 +151,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="idCardNo != null and idCardNo != ''">#{idCardNo},</if>
             <if test="gender != null and gender != ''">#{gender},</if>
             <if test="ethnicity != null and ethnicity != ''">#{ethnicity},</if>
+            <if test="birthday != null">#{birthday},</if>
+            <if test="phone != null and phone != ''">#{phone},</if>
+            <if test="politicalStatus != null and politicalStatus != ''">#{politicalStatus},</if>
+            <if test="enrollmentDate != null">#{enrollmentDate},</if>
+            <if test="isEthnicClass != null and isEthnicClass != ''">#{isEthnicClass},</if>
+            <if test="lastGradeUpdate != null">#{lastGradeUpdate},</if>
             <if test="domicile != null and domicile != ''">#{domicile},</if>
             <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
             <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
@@ -153,6 +181,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="idCardNo != null and idCardNo != ''">id_card_no = #{idCardNo},</if>
             <if test="gender != null and gender != ''">gender = #{gender},</if>
             <if test="ethnicity != null and ethnicity != ''">ethnicity = #{ethnicity},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="politicalStatus != null and politicalStatus != ''">political_status = #{politicalStatus},</if>
+            <if test="enrollmentDate != null">enrollment_date = #{enrollmentDate},</if>
+            <if test="isEthnicClass != null and isEthnicClass != ''">is_ethnic_class = #{isEthnicClass},</if>
+            <if test="lastGradeUpdate != null">last_grade_update = #{lastGradeUpdate},</if>
             <if test="domicile != null and domicile != ''">domicile = #{domicile},</if>
             <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
             <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
@@ -226,4 +260,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </update>
+
+    <!-- 根据身份证号查询学生 -->
+    <select id="selectByIdCardNo" parameterType="String" resultMap="StStudentsResult">
+        <include refid="selectStStudentsVo"/>
+        where s.id_card_no = #{idCardNo}
+    </select>
+
+    <!-- 根据学籍号查询学生 -->
+    <select id="selectByStudentNo" parameterType="String" resultMap="StStudentsResult">
+        <include refid="selectStStudentsVo"/>
+        where s.student_no = #{studentNo}
+    </select>
+
+    <!-- 根据身份证号或学籍号查询学生（性能优化） -->
+    <select id="selectByIdCardNoOrStudentNo" resultMap="StStudentsResult">
+        <include refid="selectStStudentsVo"/>
+        where (s.id_card_no = #{idCardNo} OR s.student_no = #{studentNo})
+        limit 1
+    </select>
 </mapper>

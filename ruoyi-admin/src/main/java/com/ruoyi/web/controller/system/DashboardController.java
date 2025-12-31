@@ -53,7 +53,7 @@ public class DashboardController extends BaseController
         // 获取地图数据(各县区受助学生)
         result.put("mapData", dashboardService.getMapData(segment));
         
-        // 获取学段受助金额统计
+        // 获取年级受助金额统计
         result.put("amountBySchoolLevel", dashboardService.getAmountBySchoolLevel(segment));
         
         // 获取资助项目列表
@@ -135,7 +135,7 @@ public class DashboardController extends BaseController
     }
 
     /**
-     * 获取学段受助金额统计
+     * 获取年级受助金额统计
      * @param segment 学段筛选
      */
     @PreAuthorize("@ss.hasPermi('dashboard:amount:query')")

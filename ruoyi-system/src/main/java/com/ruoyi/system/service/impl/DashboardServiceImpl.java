@@ -164,7 +164,7 @@ public class DashboardServiceImpl implements IDashboardService
     }
 
     /**
-     * 获取学段受助金额统计
+     * 获取年级受助金额统计
      * 
      * @param segment 学段筛选
      */

@@ -68,11 +68,11 @@ public interface IDashboardService
     List<Map<String, Object>> getMapData(String segment);
 
     /**
-     * 获取学段受助金额统计
-     * 按学制统计受助人数和金额
+     * 获取年级受助金额统计
+     * 按年级统计受助人数和金额，最后一行显示总计
      * 
      * @param segment 学段筛选
-     * @return 学段受助金额统计数据
+     * @return 年级受助金额统计数据
      */
     List<Map<String, Object>> getAmountBySchoolLevel(String segment);
 

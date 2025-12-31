@@ -125,6 +125,16 @@ public interface StStudentSemesterRecordMapper
                                                  @Param("semester") String semester);
     
     /**
+     * 插入新学生到受助学生信息表（不存在的学生）
+     * 
+     * @param academicYear 学年
+     * @param semester 学期
+     * @return 插入条数
+     */
+    public int insertNewStudentsIntoAidedTable(@Param("academicYear") String academicYear,
+                                               @Param("semester") String semester);
+    
+    /**
      * 根据学生ID和学年学期ID查询学期记录
      * 
      * @param studentBaseId 学生基础信息ID

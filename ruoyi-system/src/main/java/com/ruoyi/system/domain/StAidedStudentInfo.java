@@ -61,6 +61,14 @@ public class StAidedStudentInfo extends BaseEntity
     @Excel(name = "联系电话")
     private String phone;
 
+    /** 户籍所在地 */
+    @Excel(name = "户籍所在地")
+    private String domicile;
+
+    /** 是否民族高中班 1=是 0=否 */
+    @Excel(name = "是否民族高中班", readConverterExp = "0=否,1=是")
+    private String isEthnicClass;
+
     /** 学院ID */
     @Excel(name = "学院ID")
     private Long collegeId;
@@ -81,6 +89,9 @@ public class StAidedStudentInfo extends BaseEntity
     @Excel(name = "年级")
     private String grade;
 
+    /** 年级ID（数据库字段） */
+    private Long gradeIdDb;
+
     /** 班级ID */
     @Excel(name = "班级ID")
     private Long clazzId;
@@ -99,6 +110,15 @@ public class StAidedStudentInfo extends BaseEntity
     @Excel(name = "毕业日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date graduationDate;
 
+    /** 就读状态 */
+    @Excel(name = "就读状态")
+    private String studyStatus;
+
+    /** 最近一次升年级日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "最近一次升年级日期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date lastGradeUpdate;
+
     /** 学年 */
     @Excel(name = "学年")
     private String academicYear;
@@ -106,6 +126,9 @@ public class StAidedStudentInfo extends BaseEntity
     /** 学期 */
     @Excel(name = "学期")
     private String semester;
+
+    /** 当前学年学期ID（数据库字段） */
+    private Long currentYearSemesterId;
 
     /** 困难类型（字典值） */
     @Excel(name = "困难类型")
@@ -123,22 +146,6 @@ public class StAidedStudentInfo extends BaseEntity
     @Excel(name = "脱贫年份")
     private Integer povertyReliefYear;
 
-    /** 资助等级 */
-    @Excel(name = "资助等级")
-    private String subsidyLevel;
-
-    /** 资助金额 */
-    @Excel(name = "资助金额")
-    private BigDecimal subsidyAmount;
-
-    /** 资助原因 */
-    @Excel(name = "资助原因")
-    private String subsidyReason;
-
-    /** 资助状态 */
-    @Excel(name = "资助状态")
-    private String subsidyStatus;
-
     /** 备注 */
     @Excel(name = "备注")
     private String remark;
@@ -155,10 +162,13 @@ public class StAidedStudentInfo extends BaseEntity
     /** 免学杂费金额（关联查询，不存数据库） */
     private BigDecimal tuitionWaiverAmount;
 
-    /** 学制ID（关联字段，用于筛选，不直接存数据库） */
+    /** 所属学制ID（数据库字段） */
+    private Long schoolingPlanIdDb;
+
+    /** 学制ID（关联字段，用于筛选，从st_students_base表获取） */
     private Long schoolingPlanId;
 
-    /** 年级ID（关联字段，用于筛选，不直接存数据库） */
+    /** 年级ID（关联字段，用于筛选，从st_students_base表获取） */
     private Long gradeId;
 
     /** 班级ID（查询参数，用于兼容前端传递的classId参数） */
@@ -269,6 +279,24 @@ public class StAidedStudentInfo extends BaseEntity
     {
         return phone;
     }
+    public void setDomicile(String domicile) 
+    {
+        this.domicile = domicile;
+    }
+
+    public String getDomicile() 
+    {
+        return domicile;
+    }
+    public void setIsEthnicClass(String isEthnicClass) 
+    {
+        this.isEthnicClass = isEthnicClass;
+    }
+
+    public String getIsEthnicClass() 
+    {
+        return isEthnicClass;
+    }
     public void setCollegeId(Long collegeId) 
     {
         this.collegeId = collegeId;
@@ -350,6 +378,24 @@ public class StAidedStudentInfo extends BaseEntity
     {
         return graduationDate;
     }
+    public void setStudyStatus(String studyStatus) 
+    {
+        this.studyStatus = studyStatus;
+    }
+
+    public String getStudyStatus() 
+    {
+        return studyStatus;
+    }
+    public void setLastGradeUpdate(Date lastGradeUpdate) 
+    {
+        this.lastGradeUpdate = lastGradeUpdate;
+    }
+
+    public Date getLastGradeUpdate() 
+    {
+        return lastGradeUpdate;
+    }
     public void setAcademicYear(String academicYear) 
     {
         this.academicYear = academicYear;
@@ -367,6 +413,15 @@ public class StAidedStudentInfo extends BaseEntity
     public String getSemester() 
     {
         return semester;
+    }
+    public void setCurrentYearSemesterId(Long currentYearSemesterId) 
+    {
+        this.currentYearSemesterId = currentYearSemesterId;
+    }
+
+    public Long getCurrentYearSemesterId() 
+    {
+        return currentYearSemesterId;
     }
     public void setDifficultyTypeId(String difficultyTypeId) 
     {
@@ -403,42 +458,6 @@ public class StAidedStudentInfo extends BaseEntity
     public Integer getPovertyReliefYear()
     {
         return povertyReliefYear;
-    }
-    public void setSubsidyLevel(String subsidyLevel) 
-    {
-        this.subsidyLevel = subsidyLevel;
-    }
-
-    public String getSubsidyLevel() 
-    {
-        return subsidyLevel;
-    }
-    public void setSubsidyAmount(BigDecimal subsidyAmount) 
-    {
-        this.subsidyAmount = subsidyAmount;
-    }
-
-    public BigDecimal getSubsidyAmount() 
-    {
-        return subsidyAmount;
-    }
-    public void setSubsidyReason(String subsidyReason) 
-    {
-        this.subsidyReason = subsidyReason;
-    }
-
-    public String getSubsidyReason() 
-    {
-        return subsidyReason;
-    }
-    public void setSubsidyStatus(String subsidyStatus) 
-    {
-        this.subsidyStatus = subsidyStatus;
-    }
-
-    public String getSubsidyStatus() 
-    {
-        return subsidyStatus;
     }
     public void setRemark(String remark) 
     {
@@ -488,6 +507,16 @@ public class StAidedStudentInfo extends BaseEntity
         return tuitionWaiverAmount;
     }
 
+    public void setSchoolingPlanIdDb(Long schoolingPlanIdDb)
+    {
+        this.schoolingPlanIdDb = schoolingPlanIdDb;
+    }
+
+    public Long getSchoolingPlanIdDb()
+    {
+        return schoolingPlanIdDb;
+    }
+
     public void setSchoolingPlanId(Long schoolingPlanId)
     {
         this.schoolingPlanId = schoolingPlanId;
@@ -506,6 +535,16 @@ public class StAidedStudentInfo extends BaseEntity
     public Long getGradeId()
     {
         return gradeId;
+    }
+
+    public void setGradeIdDb(Long gradeIdDb)
+    {
+        this.gradeIdDb = gradeIdDb;
+    }
+
+    public Long getGradeIdDb()
+    {
+        return gradeIdDb;
     }
 
     public void setClassId(Long classId)
@@ -567,10 +606,6 @@ public class StAidedStudentInfo extends BaseEntity
             .append("difficultyLevelId", getDifficultyLevelId())
             .append("isPovertyReliefFamily", getIsPovertyReliefFamily())
             .append("povertyReliefYear", getPovertyReliefYear())
-            .append("subsidyLevel", getSubsidyLevel())
-            .append("subsidyAmount", getSubsidyAmount())
-            .append("subsidyReason", getSubsidyReason())
-            .append("subsidyStatus", getSubsidyStatus())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

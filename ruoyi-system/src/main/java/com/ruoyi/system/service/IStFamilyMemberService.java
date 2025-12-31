@@ -17,9 +17,12 @@ public interface IStFamilyMemberService {
     int deleteStFamilyMemberByIds(Long[] ids);
 
     /**
+     * 根据学生 ID 删除其所有成员
+     */
+    int deleteByStudentId(Long studentId);
+
+    /**
      * 覆盖保存指定学生的家庭成员（先删后插），空列表时仅清空
      */
     void saveByStudentId(Long studentId, Long yearSemesterId, List<StFamilyMember> members);
 }
-
-

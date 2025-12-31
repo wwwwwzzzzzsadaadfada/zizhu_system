@@ -104,20 +104,20 @@
 
       <!-- 右侧列 -->
       <div class="right-column">
-        <!-- 学段受助金额统计 -->
+        <!-- 年级受助金额统计 -->
         <div class="data-card fixed-height-card">
           <div class="card-header">
             <span class="card-icon">▣</span>
-            <h3 class="card-title">学段受助金额统计</h3>
+            <h3 class="card-title">年级受助金额统计</h3>
           </div>
           <div class="card-body">
             <div class="amount-table">
               <div class="table-header">
-                <div class="table-cell">学段</div>
+                <div class="table-cell">年级</div>
                 <div class="table-cell">受助人数</div>
-                <div class="table-cell">受助金额</div>
+                <div class="table-cell">受助金额/万元</div>
               </div>
-              <div class="table-row" v-for="(item, index) in amountData" :key="index">
+              <div class="table-row" v-for="(item, index) in amountData" :key="index" :class="{ 'total-row': item.label === '总计' }">
                 <div class="table-cell">{{ item.label }}</div>
                 <div class="table-cell">{{ item.count }}</div>
                 <div class="table-cell amount">{{ item.amount }}</div>
@@ -572,16 +572,16 @@ export default {
       }
     },
     
-    // 根据受助学生数量计算绿色深浅
+    // 根据受助学生数量计算蓝色深浅（梦幻蓝配色）
     getGreenColorByValue(value) {
-      // 定义绿色梯度
+      // 定义梦幻蓝色梯度
       const colors = [
-        { threshold: 50, color: '#E8F5E9' },   // 极浅绿
-        { threshold: 100, color: '#C8E6C9' },  // 浅绿
-        { threshold: 150, color: '#A5D6A7' },  // 中浅绿
-        { threshold: 200, color: '#81C784' },  // 中绿
-        { threshold: 250, color: '#66BB6A' },  // 中深绿
-        { threshold: Infinity, color: '#4CAF50' } // 深绿
+        { threshold: 50, color: '#E3F2FD' },   // 极浅蓝
+        { threshold: 100, color: '#BBDEFB' },  // 浅蓝
+        { threshold: 150, color: '#90CAF9' },  // 中浅蓝
+        { threshold: 200, color: '#64B5F6' },  // 中蓝
+        { threshold: 250, color: '#42A5F5' },  // 中深蓝
+        { threshold: Infinity, color: '#2196F3' } // 梦幻蓝
       ]
       
       for (let i = 0; i < colors.length; i++) {
@@ -590,7 +590,7 @@ export default {
         }
       }
       
-      return '#4CAF50'
+      return '#2196F3'
     },
     
     initCharts() {
@@ -685,17 +685,25 @@ export default {
         series: [
           {
             type: 'bar',
-            data: counts.length > 0 ? counts : [0, 0, 0],
-            itemStyle: { color: '#52C41A', borderRadius: [4, 4, 0, 0] },
-            barWidth: '40%',
-            label: {
-              show: true,
-              position: 'top',
-              formatter: '{c}人',
-              color: '#52C41A',
-              fontSize: 12,
-              fontWeight: 600
-            }
+            data: (counts.length > 0 ? counts : [0, 0, 0]).map((value, index) => {
+              const colors = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4']
+              return {
+                value: value,
+                itemStyle: {
+                  color: colors[index % colors.length],
+                  borderRadius: [4, 4, 0, 0]
+                },
+                label: {
+                  show: true,
+                  position: 'top',
+                  formatter: '{c}人',
+                  color: colors[index % colors.length],
+                  fontSize: 12,
+                  fontWeight: 600
+                }
+              }
+            }),
+            barWidth: '40%'
           }
         ]
       }
@@ -725,11 +733,14 @@ export default {
           { name: '凭祥市', value: 0 }
         ]
       
+      // 引入 dh.png 图标
+      const dhIcon = require('@/assets/kzc/dh.png')
+      
       const option = {
         tooltip: {
           trigger: 'item',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          borderColor: '#66BB6A',
+          borderColor: '#1976D2',
           borderWidth: 1,
           padding: [8, 12],
           textStyle: {
@@ -737,68 +748,150 @@ export default {
             fontSize: 12
           },
           formatter: function(params) {
+            // 如果是散点数据，显示人数
+            if (params.componentSubType === 'scatter' && params.data && params.data.value) {
+              const count = params.data.value[2] || 0
+              return '<strong>' + params.data.name + '</strong><br/>受助学生: <span style="color:#1976D2;font-weight:bold">' + count + '</span> 人'
+            }
+            // 地图区域的 tooltip
             if (params.data && params.data.value) {
-              return '<strong>' + params.name + '</strong><br/>受助学生: <span style="color:#2E7D32;font-weight:bold">' + params.value + '</span> 人'
+              return '<strong>' + params.name + '</strong><br/>受助学生: <span style="color:#1976D2;font-weight:bold">' + params.value + '</span> 人'
             }
             return '<strong>' + params.name + '</strong><br/>受助学生: <span style="color:#999">0</span> 人'
+          }
+        },
+        geo: {
+          map: 'chongzuo',
+          roam: true,
+          zoom: 1.3,
+          scaleLimit: {
+            min: 0.8,
+            max: 3
+          },
+          itemStyle: {
+            areaColor: '#E3F2FD',
+            borderColor: '#BDBDBD',
+            borderWidth: 1
+          },
+          emphasis: {
+            itemStyle: {
+              areaColor: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 1,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: '#C8E6C9' },
+                  { offset: 0.5, color: '#81C784' },
+                  { offset: 1, color: '#66BB6A' }
+                ]
+              },
+              borderColor: '#4CAF50',
+              borderWidth: 2
+            }
+          },
+          select: {
+            itemStyle: {
+              areaColor: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 1,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: '#A5D6A7' },
+                  { offset: 0.5, color: '#66BB6A' },
+                  { offset: 1, color: '#4CAF50' }
+                ]
+              },
+              borderColor: '#2E7D32'
+            }
           }
         },
         series: [
           {
             name: '受助学生分布',
-            type: 'map',
-            map: 'chongzuo',
-            roam: true,
-            zoom: 1.3,
-            scaleLimit: {
-              min: 0.8,
-              max: 3
-            },
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            symbol: 'circle',
+            symbolSize: 1,
             label: {
               show: true,
-              color: '#333',
-              fontSize: 11,
-              fontWeight: 'normal'
+              position: 'bottom',
+              distance: 13,
+              formatter: function(params) {
+                const count = params.data.value && params.data.value[2] ? params.data.value[2] : 0
+                return '{name|' + params.data.name + '}\n{count|' + count + '人}'
+              },
+              rich: {
+                name: {
+                  fontSize: 11,
+                  fontWeight: 'bold',
+                  color: '#000',
+                  lineHeight: 14,
+                  align: 'center'
+                },
+                count: {
+                  fontSize: 11,
+                  fontWeight: 'bold',
+                  color: '#FF5252',
+                  lineHeight: 14,
+                  align: 'center'
+                }
+              },
+              backgroundColor: 'transparent',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              padding: [0, 0],
+              shadowBlur: 0,
+              shadowColor: 'transparent',
+              shadowOffsetX: 0,
+              shadowOffsetY: 0
             },
             itemStyle: {
-              areaColor: '#FFFFFF',
-              borderColor: '#E0E0E0',
-              borderWidth: 1
+              color: 'rgba(25, 118, 210, 0)',
+              borderColor: 'rgba(25, 118, 210, 0)',
+              borderWidth: 0
             },
             emphasis: {
-              label: {
-                show: true,
-                color: '#2E7D32',
-                fontSize: 12,
-                fontWeight: 'bold'
-              },
               itemStyle: {
-                areaColor: '#A5D6A7',
-                borderColor: '#66BB6A',
-                borderWidth: 2,
-                shadowBlur: 10,
-                shadowColor: 'rgba(102, 187, 106, 0.3)'
+                color: 'rgba(25, 118, 210, 0)',
+                borderWidth: 0
+              },
+              label: {
+                show: true
               }
             },
-            select: {
-              label: {
-                color: '#1B5E20',
-                fontWeight: 'bold'
-              },
-              itemStyle: {
-                areaColor: '#81C784',
-                borderColor: '#4CAF50'
-              }
-            },
-            data: mapData.map(item => ({
-              name: item.name,
-              value: item.value,
-              itemStyle: {
-                areaColor: item.value > 0 ? this.getGreenColorByValue(item.value) : '#FFFFFF',
-                borderColor: item.value > 0 ? '#66BB6A' : '#E0E0E0',
-                borderWidth: 1
-              }
-            }))
+            data: [
+              { name: '江州区', value: [107.353926, 22.404108, mapData.find(d => d.name === '江州区')?.value || 0] },
+              { name: '扶绥县', value: [107.904888, 22.636890, mapData.find(d => d.name === '扶绥县')?.value || 0] },
+              { name: '宁明县', value: [107.076456, 22.140192, mapData.find(d => d.name === '宁明县')?.value || 0] },
+              { name: '龙州县', value: [106.854611, 22.342825, mapData.find(d => d.name === '龙州县')?.value || 0] },
+              { name: '大新县', value: [107.200766, 22.829287, mapData.find(d => d.name === '大新县')?.value || 0] },
+              { name: '天等县', value: [107.143433, 23.081394, mapData.find(d => d.name === '天等县')?.value || 0] },
+              { name: '凭祥市', value: [106.766293, 22.094484, mapData.find(d => d.name === '凭祥市')?.value || 0] }
+            ]
+          },
+          {
+            name: '图标',
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            symbol: 'image://' + dhIcon,
+            symbolSize: [20, 20],
+            label: { show: false },
+            itemStyle: { opacity: 1 },
+            z: 10,
+            zlevel: 100,
+            data: [
+              { name: '江州区', value: [107.353926, 22.404108, mapData.find(d => d.name === '江州区')?.value || 0] },
+              { name: '扶绥县', value: [107.904888, 22.636890, mapData.find(d => d.name === '扶绥县')?.value || 0] },
+              { name: '宁明县', value: [107.076456, 22.140192, mapData.find(d => d.name === '宁明县')?.value || 0] },
+              { name: '龙州县', value: [106.854611, 22.342825, mapData.find(d => d.name === '龙州县')?.value || 0] },
+              { name: '大新县', value: [107.200766, 22.829287, mapData.find(d => d.name === '大新县')?.value || 0] },
+              { name: '天等县', value: [107.143433, 23.081394, mapData.find(d => d.name === '天等县')?.value || 0] },
+              { name: '凭祥市', value: [106.766293, 22.094484, mapData.find(d => d.name === '凭祥市')?.value || 0] }
+            ]
           }
         ]
       }
@@ -885,7 +978,7 @@ export default {
   padding: 0;
   background: linear-gradient(to bottom, #E8F5E9 0%, #F1F8E9 30%, #FFFFFF 70%);
   min-height: 100vh;
-  font-family: 'Microsoft YaHei', Arial, sans-serif;
+  font-family: 'Source Han Sans CN', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
 
   // 顶部标题栏
   .dashboard-header {
@@ -1013,7 +1106,7 @@ export default {
         font-size: 15px;
         color: #2E7D32; // 深绿色
         font-weight: 600;
-        font-family: 'Courier New', monospace;
+        font-family: 'Source Han Sans CN', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', monospace;
         background: rgba(232, 245, 233, 0.6); // 浅绿色背景
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -1055,7 +1148,7 @@ export default {
         font-size: 32px;
         font-weight: 600;
         color: #2E7D32;
-        font-family: Arial, sans-serif;
+        font-family: 'Source Han Sans CN', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
       }
     }
   }
@@ -1725,6 +1818,27 @@ export default {
 
       &:last-child {
         border-bottom: none;
+      }
+      
+      // 总计行样式
+      &.total-row {
+        background: #F1F8E9;
+        border-top: 2px solid #66BB6A;
+        margin-top: 4px;
+        font-weight: 600;
+        
+        &:hover {
+          background: #E8F5E9;
+        }
+        
+        .table-cell {
+          color: #2E7D32;
+          font-weight: 700;
+          
+          &.amount {
+            color: #F57C00;
+          }
+        }
       }
 
       .table-cell {

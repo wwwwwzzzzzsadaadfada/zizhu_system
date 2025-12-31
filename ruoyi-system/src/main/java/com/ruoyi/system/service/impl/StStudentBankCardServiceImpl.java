@@ -51,6 +51,11 @@ public class StStudentBankCardServiceImpl implements IStStudentBankCardService {
         return stStudentBankCardMapper.deleteStStudentBankCardByIds(ids);
     }
 
+    @Override
+    public int deleteByStudentId(Long studentId) {
+        return stStudentBankCardMapper.deleteByStudentId(studentId);
+    }
+
     /**
      * 覆盖保存学生银行卡列表（先清空再插入）
      */
@@ -76,6 +81,7 @@ public class StStudentBankCardServiceImpl implements IStStudentBankCardService {
             StStudentBankCard copy = new StStudentBankCard();
             copy.setStudentId(studentId);
             copy.setBankAccountNo(card.getBankAccountNo());
+            copy.setBankType(card.getBankType() != null ? card.getBankType() : "信用社");
             copy.setBankName(card.getBankName());
             copy.setBranchName(card.getBranchName());
             copy.setAccountHolder(card.getAccountHolder());

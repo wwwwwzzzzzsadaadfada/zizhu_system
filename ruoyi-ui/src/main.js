@@ -60,6 +60,9 @@ Vue.use(directive)
 Vue.use(plugins)
 DictData.install()
 
+// 创建事件总线，用于组件间通信
+Vue.prototype.$EventBus = new Vue()
+
 /**
  * If you don't want to use mock-server
  * you want to use MockJs for mock api

@@ -6,6 +6,7 @@
         <id     property="id" column="id" />
         <result property="studentId" column="student_id" />
         <result property="bankAccountNo" column="bank_account_no" />
+        <result property="bankType" column="bank_type" />
         <result property="bankName" column="bank_name" />
         <result property="branchName" column="branch_name" />
         <result property="accountHolder" column="account_holder" />
@@ -18,7 +19,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, student_id, bank_account_no, bank_name, branch_name, account_holder,
+        id, student_id, bank_account_no, bank_type, bank_name, branch_name, account_holder,
         is_primary, status, created_at, updated_at, created_by, updated_by
     </sql>
 
@@ -42,10 +43,10 @@
 
     <insert id="insertStStudentBankCard" parameterType="StStudentBankCard" useGeneratedKeys="true" keyProperty="id">
         insert into st_student_bank_cards(
-            student_id, bank_account_no, bank_name, branch_name, account_holder,
+            student_id, bank_account_no, bank_type, bank_name, branch_name, account_holder,
             is_primary, status, created_by, updated_by
         ) values (
-            #{studentId}, #{bankAccountNo}, #{bankName}, #{branchName}, #{accountHolder},
+            #{studentId}, #{bankAccountNo}, COALESCE(#{bankType}, '信用社'), #{bankName}, #{branchName}, #{accountHolder},
             COALESCE(#{isPrimary}, 0), COALESCE(#{status}, 0), #{createdBy}, #{updatedBy}
         )
     </insert>
@@ -53,6 +54,7 @@
     <update id="updateStStudentBankCard" parameterType="StStudentBankCard">
         update st_student_bank_cards
         set bank_account_no = #{bankAccountNo},
+            bank_type = COALESCE(#{bankType}, '信用社'),
             bank_name = #{bankName},
             branch_name = #{branchName},
             account_holder = #{accountHolder},

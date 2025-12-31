@@ -58,3 +58,11 @@ export function syncAllStudentsToAidedTable(academicYear, semester) {
     method: 'post'
   })
 }
+
+// 获取同步进度
+export function getSyncProgress(academicYear, semester) {
+  return request({
+    url: '/system/studentRecord/syncProgress/' + academicYear + '/' + semester,
+    method: 'get'
+  })
+}

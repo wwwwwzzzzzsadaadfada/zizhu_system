@@ -90,4 +90,5 @@ public interface IStStudentsBaseService
      * @return 更新的记录数
      */
     public int updateAllStudentsCurrentSemester(Long yearSemesterId);
+    
 }
