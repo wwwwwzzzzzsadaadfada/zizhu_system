@@ -794,14 +794,33 @@ public class ReportPdfServiceImpl implements IReportPdfService
                     if (requestUrl.contains("/exportPdfStream"))
                     {
                         // 按前端抓包格式：excelConfigId + queryParam
-                        jsonBody = String.format(
-                            "{\"excelConfigId\":\"%s\",\"queryParam\":{\"studentId\":\"%d\",\"pageNo\":\"1\",\"pageSize\":10,\"currentPageNo\":\"1\",\"currentPageSize\":10}}",
-                            reportId, studentId);
+                        // 关键修改：确保studentId作为参数传递给JavaBean数据集
+                        if (studentId != null)
+                        {
+                            jsonBody = String.format(
+                                "{\"excelConfigId\":\"%s\",\"queryParam\":{\"studentId\":%d}}",
+                                reportId, studentId);
+                        }
+                        else
+                        {
+                            // 统计报表：不传studentId
+                            jsonBody = String.format(
+                                "{\"excelConfigId\":\"%s\",\"queryParam\":{}}",
+                                reportId);
+                        }
+                        log.info("📤 导出PDF请求体: {}", jsonBody);
                     }
                     else
                     {
                         // 旧接口保持兼容
-                        jsonBody = "{\"id\":\"" + reportId + "\",\"params\":{\"studentId\":" + studentId + "}}";
+                        if (studentId != null)
+                        {
+                            jsonBody = "{\"id\":\"" + reportId + "\",\"params\":{\"studentId\":" + studentId + "}}";
+                        }
+                        else
+                        {
+                            jsonBody = "{\"id\":\"" + reportId + "\",\"params\":{}}";
+                        }
                     }
 
                     try (DataOutputStream out = new DataOutputStream(connection.getOutputStream()))

@@ -148,5 +148,7 @@ jimu:
 # 加密配置
 encryption:
   # AES密钥（必须16字节）
-  # 优先从环境变量读取，如果没有则使用默认值（仅用于本地开发）
-  aes-key: ${AES_SECRET_KEY}
+  # 生产环境建议从环境变量读取：${AES_SECRET_KEY}
+  aes-key: ruoyi_student_key
+  # 数据库解密函数使用的密钥（与aes-key保持一致）
+  key: ruoyi_student_key

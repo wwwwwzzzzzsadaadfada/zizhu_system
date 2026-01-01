@@ -150,7 +150,9 @@
       <el-table-column label="身份证号" align="center" prop="idCardNo" width="160" show-overflow-tooltip />
       <el-table-column label="性别" align="center" prop="gender" width="70">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_student_gender" :value="scope.row.gender"/>
+          <span v-if="scope.row.gender === '1'">男</span>
+          <span v-else-if="scope.row.gender === '0'">女</span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="民族" align="center" prop="ethnicity" width="80">
@@ -563,23 +565,6 @@ export default {
     dialogWidth() {
       // 报表tab时使用95%宽度，其他tab使用1000px
       return this.activeTab === 'report' ? '95%' : '1000px'
-    },
-    /** 脱贫年份字符串（用于 el-date-picker，确保始终是字符串类型） */
-    povertyReliefYearString: {
-      get() {
-        if (!this.form || !this.form.povertyReliefYear) {
-          return null
-        }
-        // 确保返回字符串类型
-        const value = this.form.povertyReliefYear
-        return typeof value === 'string' ? value : String(value)
-      },
-      set(value) {
-        // el-date-picker 返回的是字符串，直接赋值
-        if (this.form) {
-          this.form.povertyReliefYear = value
-        }
-      }
     },
     /** 脱贫年份字符串（用于 el-date-picker，确保始终是字符串类型） */
     povertyReliefYearString: {

@@ -184,4 +184,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
            OR study_status = '' 
            OR study_status = '1'
     </update>
+    
+    <!-- 查询报表学生数据（用于积木报表JavaBean数据集） -->
+    <select id="selectStudentListForReport" parameterType="java.util.Map" resultType="java.util.HashMap">
+        SELECT 
+            s.id,
+            s.name,
+            s.student_no,
+            s.id_card_no,
+            s.phone,
+            s.domicile as home_address,
+            s.gender,
+            s.ethnicity,
+            s.birthday,
+            DATE_FORMAT(s.birthday, '%Y-%m-%d') as birth_date,
+            CONCAT(g.name, '/', c.class_name) as grade_class,
+            s.enrollment_date,
+            DATE_FORMAT(s.enrollment_date, '%Y-%m-%d') as enrollment_date,
+            s.political_status,
+            s.is_ethnic_class,
+            b.bank_account_no as bank_card_no,
+            b.bank_name
+        FROM st_students_base s
+        LEFT JOIN st_grades g ON s.grade_id = g.id
+        LEFT JOIN st_class_info c ON s.class_id = c.class_id
+        LEFT JOIN st_student_bank_cards b ON b.student_id = s.id AND b.is_primary = 1
+        <where>
+            <if test="studentId != null">AND s.id = #{studentId}</if>
+            <if test="name != null and name != ''">AND s.name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="gradeId != null">AND s.grade_id = #{gradeId}</if>
+            <if test="classId != null">AND s.class_id = #{classId}</if>
+        </where>
+        ORDER BY s.id
+    </select>
 </mapper>

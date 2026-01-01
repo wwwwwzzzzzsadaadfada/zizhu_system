@@ -102,4 +102,12 @@ public interface StStudentsBaseMapper
      * @return 更新的记录数
      */
     public int updateAllStudentsCurrentSemester(@Param("yearSemesterId") Long yearSemesterId);
+    
+    /**
+     * 查询报表学生数据（用于积木报表JavaBean数据集）
+     * 
+     * @param params 查询参数
+     * @return 学生数据列表
+     */
+    public List<Map<String, Object>> selectStudentListForReport(Map<String, Object> params);
 }

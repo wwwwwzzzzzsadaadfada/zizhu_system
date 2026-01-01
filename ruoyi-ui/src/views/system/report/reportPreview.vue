@@ -463,7 +463,7 @@ export default {
       }
       // 检查是否已选择学生或报表
       if (this.queryForm.studentId && !this.queryForm.reportId) {
-        return '请在左侧选择报表'
+        return `已选择学生：${this.queryForm.studentName || ''}，请在左侧选择报表`
       }
       if (!this.queryForm.studentId && this.queryForm.reportId) {
         return '请输入学生姓名并选择'
@@ -476,7 +476,7 @@ export default {
         return '左侧选择统计报表模板，无需选择学生'
       }
       if (this.queryForm.studentId && !this.queryForm.reportId) {
-        return '已选择学生，请在左侧报表树中选择报表模板'
+        return '👈 请在左侧报表树中点击选择报表模板，即可查看该学生的报表'
       }
       if (!this.queryForm.studentId && this.queryForm.reportId) {
         return '已选择报表，请上方输入学生姓名并选择'
