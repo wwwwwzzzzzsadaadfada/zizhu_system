@@ -798,14 +798,14 @@ public class ReportPdfServiceImpl implements IReportPdfService
                         if (studentId != null)
                         {
                             jsonBody = String.format(
-                                "{\"excelConfigId\":\"%s\",\"queryParam\":{\"studentId\":%d}}",
+                                "{\"excelConfigId\":\"%s\",\"queryParam\":{\"studentId\":%d,\"desensitize\":\"false\"}}",
                                 reportId, studentId);
                         }
                         else
                         {
                             // 统计报表：不传studentId
                             jsonBody = String.format(
-                                "{\"excelConfigId\":\"%s\",\"queryParam\":{}}",
+                                "{\"excelConfigId\":\"%s\",\"queryParam\":{\"desensitize\":\"false\"}}",
                                 reportId);
                         }
                         log.info("📤 导出PDF请求体: {}", jsonBody);

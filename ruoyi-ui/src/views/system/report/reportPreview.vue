@@ -878,8 +878,9 @@ export default {
         // 统计报表：无需studentId参数
         this.reportUrl = `${baseUrl}/jmreport/view/${this.queryForm.reportId}`
       } else {
-        // 学生报表：需要studentId参数
-        this.reportUrl = `${baseUrl}/jmreport/view/${this.queryForm.reportId}?studentId=${this.queryForm.studentId}`
+        // 学生报表：需要studentId参数，并且开启脱敏模式
+        this.reportUrl = `${baseUrl}/jmreport/view/${this.queryForm.reportId}?studentId=${this.queryForm.studentId}&desensitize=true`
+        console.log('📋 预览URL:', this.reportUrl)
       }
     },
 

@@ -2,6 +2,7 @@ package com.ruoyi.system.service.impl;
 
 import com.ruoyi.common.utils.EncryptionUtil;
 import com.ruoyi.common.utils.DictTranslateUtil;
+import com.ruoyi.common.utils.SensitiveDataUtil;
 import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.system.mapper.StStudentsBaseMapper;
 import org.jeecg.modules.jmreport.api.data.IDataSetFactory;
@@ -49,6 +50,21 @@ public class StudentReportDataService implements IDataSetFactory
         
         try
         {
+            // 判断是否需要脱敏（预览时脱敏，归档/下载时不脱敏）
+            // 注意：JimuReport可能不会将URL参数传递给JavaBean，需要在报表参数中定义
+            boolean needDesensitize = false;
+            if (param != null)
+            {
+                // 先尝试从参数中获取
+                Object desensitizeObj = param.get("desensitize");
+                if (desensitizeObj != null)
+                {
+                    needDesensitize = "true".equalsIgnoreCase(desensitizeObj.toString()) || "1".equals(desensitizeObj.toString());
+                }
+                
+                log.info("🔒 脱敏模式: {}", needDesensitize ? "开启（预览模式）" : "关闭（归档/下载模式）");
+                log.info("📝 desensitize参数值: {}", desensitizeObj);
+            }
             // 如果传入了studentId参数，只查询指定学生
             if (param != null && param.containsKey("studentId"))
             {
@@ -96,7 +112,17 @@ public class StudentReportDataService implements IDataSetFactory
                 decryptField(student, "home_address");  // 家庭住址
                 decryptField(student, "domicile");      // 户籍地址
                 
-                // 3. 转换字典值为显示文本
+                // 3. 根据参数决定是否脱敏
+                if (needDesensitize)
+                {
+                    desensitizeField(student, "id_card_no");   // 身份证脱敏
+                    desensitizeField(student, "phone");        // 手机号脱敏
+                    desensitizeField(student, "student_no");   // 学籍号脱敏
+                    desensitizeField(student, "home_address"); // 家庭住址脱敏
+                    log.debug("已对学生 {} 的敏感信息进行脱敏", student.get("name"));
+                }
+                
+                // 4. 转换字典值为显示文本
                 translateDictFields(student);
             }
             
@@ -211,6 +237,53 @@ public class StudentReportDataService implements IDataSetFactory
                 {
                     log.warn("解密字段 {} 失败: {}, 保持原值", fieldName, e.getMessage());
                 }
+            }
+        }
+    }
+    
+    /**
+     * 脱敏单个字段（在解密后调用）
+     * 使用项目统一的 SensitiveDataUtil 工具类（基于 Hutool）
+     * 身份证：前6后4位
+     * 手机号：前3后4位
+     * 学籍号：G + 脱敏后的身份证号
+     * 家庭住址：保留省市县区镇，后续部分替换为'**村**屯*号'
+     */
+    private void desensitizeField(Map<String, Object> record, String fieldName)
+    {
+        Object value = record.get(fieldName);
+        if (value != null && value instanceof String)
+        {
+            String str = (String) value;
+            String desensitized = null;
+            
+            if ("id_card_no".equals(fieldName))
+            {
+                // 身份证：使用 Hutool 脱敏，前6后4位
+                desensitized = SensitiveDataUtil.maskIdCardNo(str);
+            }
+            else if ("phone".equals(fieldName))
+            {
+                // 手机号：使用 Hutool 脱敏，前3后4位
+                desensitized = SensitiveDataUtil.maskPhone(str);
+            }
+            else if ("student_no".equals(fieldName))
+            {
+                // 学籍号：G + 脱敏后的身份证号
+                // 需要从学籍号中提取身份证号（去掉前缀G）
+                String idCardNo = str.startsWith("G") ? str.substring(1) : str;
+                desensitized = SensitiveDataUtil.maskStudentNo(idCardNo);
+            }
+            else if ("home_address".equals(fieldName))
+            {
+                // 家庭住址：使用自定义地址脱敏
+                desensitized = SensitiveDataUtil.maskAddress(str);
+            }
+            
+            if (desensitized != null)
+            {
+                record.put(fieldName, desensitized);
+                log.debug("字段 {} 已脱敏", fieldName);
             }
         }
     }
