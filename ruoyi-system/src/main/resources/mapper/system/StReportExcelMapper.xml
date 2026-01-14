@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.StReportExcelMapper">
+
+    <resultMap type="com.ruoyi.system.domain.StReportExcel" id="StReportExcelResult">
+        <result property="id"    column="id"    />
+        <result property="studentId"    column="student_id"    />
+        <result property="studentName"    column="student_name"    />
+        <result property="studentNo"    column="student_no"    />
+        <result property="schoolingPlanId"    column="schooling_plan_id"    />
+        <result property="gradeId"    column="grade_id"    />
+        <result property="gradeName"    column="grade_name"    />
+        <result property="classId"    column="class_id"    />
+        <result property="className"    column="class_name"    />
+        <result property="reportId"    column="report_id"    />
+        <result property="reportName"    column="report_name"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="filePath"    column="file_path"    />
+        <result property="fileSize"    column="file_size"    />
+        <result property="yearSemesterId"    column="year_semester_id"    />
+        <result property="isMerged"    column="is_merged"    />
+        <result property="mergedFromIds"    column="merged_from_ids"    />
+        <result property="status"    column="status"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+    </resultMap>
+
+    <sql id="selectStReportExcelVo">
+        select id, student_id, student_name, student_no, schooling_plan_id, grade_id, grade_name, class_id, class_name, 
+               report_id, report_name, file_name, file_path, file_size, year_semester_id, is_merged, merged_from_ids, 
+               status, create_time, create_by, update_time, update_by 
+        from st_report_excel
+    </sql>
+
+    <select id="selectStReportExcelById" parameterType="Long" resultMap="StReportExcelResult">
+        <include refid="selectStReportExcelVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectStReportExcelList" parameterType="com.ruoyi.system.domain.StReportExcel" resultMap="StReportExcelResult">
+        <include refid="selectStReportExcelVo"/>
+        <where>
+            <if test="studentId != null and studentId != ''"> and student_id = #{studentId}</if>
+            <if test="studentName != null and studentName != ''"> and student_name like concat('%', #{studentName}, '%')</if>
+            <if test="studentNo != null and studentNo != ''"> and student_no like concat('%', #{studentNo}, '%')</if>
+            <if test="schoolingPlanId != null and schoolingPlanId != ''"> and schooling_plan_id = #{schoolingPlanId}</if>
+            <if test="gradeId != null and gradeId != ''"> and grade_id = #{gradeId}</if>
+            <if test="gradeName != null and gradeName != ''"> and grade_name like concat('%', #{gradeName}, '%')</if>
+            <if test="classId != null and classId != ''"> and class_id = #{classId}</if>
+            <if test="className != null and className != ''"> and class_name like concat('%', #{className}, '%')</if>
+            <if test="reportId != null and reportId != ''"> and report_id = #{reportId}</if>
+            <if test="reportName != null and reportName != ''"> and report_name like concat('%', #{reportName}, '%')</if>
+            <if test="fileName != null and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="filePath != null and filePath != ''"> and file_path like concat('%', #{filePath}, '%')</if>
+            <if test="fileSize != null"> and file_size = #{fileSize}</if>
+            <if test="yearSemesterId != null and yearSemesterId != ''"> and year_semester_id = #{yearSemesterId}</if>
+            <if test="isMerged != null"> and is_merged = #{isMerged}</if>
+            <if test="mergedFromIds != null and mergedFromIds != ''"> and merged_from_ids = #{mergedFromIds}</if>
+            <if test="status != null"> and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectStReportExcelByIds" parameterType="java.util.List" resultMap="StReportExcelResult">
+        <include refid="selectStReportExcelVo"/>
+        where id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="insertStReportExcel" parameterType="com.ruoyi.system.domain.StReportExcel" useGeneratedKeys="true" keyProperty="id">
+        insert into st_report_excel
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">student_id,</if>
+            <if test="studentName != null and studentName != ''">student_name,</if>
+            <if test="studentNo != null and studentNo != ''">student_no,</if>
+            <if test="schoolingPlanId != null">schooling_plan_id,</if>
+            <if test="gradeId != null">grade_id,</if>
+            <if test="gradeName != null and gradeName != ''">grade_name,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="className != null and className != ''">class_name,</if>
+            <if test="reportId != null and reportId != ''">report_id,</if>
+            <if test="reportName != null and reportName != ''">report_name,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="filePath != null and filePath != ''">file_path,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="yearSemesterId != null">year_semester_id,</if>
+            <if test="isMerged != null">is_merged,</if>
+            <if test="mergedFromIds != null and mergedFromIds != ''">merged_from_ids,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="studentId != null">#{studentId},</if>
+            <if test="studentName != null and studentName != ''">#{studentName},</if>
+            <if test="studentNo != null and studentNo != ''">#{studentNo},</if>
+            <if test="schoolingPlanId != null">#{schoolingPlanId},</if>
+            <if test="gradeId != null">#{gradeId},</if>
+            <if test="gradeName != null and gradeName != ''">#{gradeName},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="className != null and className != ''">#{className},</if>
+            <if test="reportId != null and reportId != ''">#{reportId},</if>
+            <if test="reportName != null and reportName != ''">#{reportName},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="filePath != null and filePath != ''">#{filePath},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="yearSemesterId != null">#{yearSemesterId},</if>
+            <if test="isMerged != null">#{isMerged},</if>
+            <if test="mergedFromIds != null and mergedFromIds != ''">#{mergedFromIds},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStReportExcel" parameterType="com.ruoyi.system.domain.StReportExcel">
+        update st_report_excel
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="studentName != null and studentName != ''">student_name = #{studentName},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="schoolingPlanId != null">schooling_plan_id = #{schoolingPlanId},</if>
+            <if test="gradeId != null">grade_id = #{gradeId},</if>
+            <if test="gradeName != null and gradeName != ''">grade_name = #{gradeName},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="className != null and className != ''">class_name = #{className},</if>
+            <if test="reportId != null and reportId != ''">report_id = #{reportId},</if>
+            <if test="reportName != null and reportName != ''">report_name = #{reportName},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="filePath != null and filePath != ''">file_path = #{filePath},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="yearSemesterId != null">year_semester_id = #{yearSemesterId},</if>
+            <if test="isMerged != null">is_merged = #{isMerged},</if>
+            <if test="mergedFromIds != null and mergedFromIds != ''">merged_from_ids = #{mergedFromIds},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStReportExcelById" parameterType="Long">
+        delete from st_report_excel where id = #{id}
+    </delete>
+
+    <delete id="deleteStReportExcelByIds" parameterType="Long">
+        delete from st_report_excel where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

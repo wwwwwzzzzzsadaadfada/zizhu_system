@@ -48,6 +48,12 @@ public class StudentReportDataService implements IDataSetFactory
             .map(e -> e.getKey() + "=" + (e.getValue() != null ? e.getValue().getClass().getSimpleName() + ":" + e.getValue() : "null"))
             .reduce((a, b) -> a + ", " + b).orElse("空") : "null");
         
+        // 归档/导出时，确保即使没有参数也能解密（归档时不应脱敏，但必须解密）
+        if (param == null || param.isEmpty())
+        {
+            log.warn("⚠️ 参数为空，将使用默认值进行查询（不脱敏但会解密）");
+        }
+        
         try
         {
             // 判断是否需要脱敏（预览时脱敏，归档/下载时不脱敏）
@@ -103,7 +109,8 @@ public class StudentReportDataService implements IDataSetFactory
                 return students;
             }
             
-            // 2. 解密敏感字段
+            // 2. 解密敏感字段（归档/导出时必须解密，无论是否有desensitize参数）
+            log.info("🔓 开始解密敏感字段，共 {} 条记录", students.size());
             for (Map<String, Object> student : students)
             {
                 decryptField(student, "student_no");    // 学籍号
@@ -144,15 +151,29 @@ public class StudentReportDataService implements IDataSetFactory
     @Override
     public JmPage createPageData(Map<String, Object> param)
     {
-        log.info("开始查询报表学生数据（分页），参数: {}", param);
+        log.info("✅ [分页查询] 开始查询报表学生数据（分页），参数: {}", param);
         
         JmPage page = new JmPage();
         
         try
         {
+            // 判断是否需要脱敏（预览时脱敏，归档/下载时不脱敏）
+            boolean needDesensitize = false;
+            if (param != null)
+            {
+                Object desensitizeObj = param.get("desensitize");
+                if (desensitizeObj != null)
+                {
+                    needDesensitize = "true".equalsIgnoreCase(desensitizeObj.toString()) || "1".equals(desensitizeObj.toString());
+                }
+                
+                log.info("🔒 脱敏模式: {}", needDesensitize ? "开启（预览模式）" : "关闭（归档/下载模式）");
+                log.info("📝 desensitize参数值: {}", desensitizeObj);
+            }
+            
             // 从参数中获取分页信息
-            int pageNo = param.containsKey("pageNo") ? Integer.parseInt(param.get("pageNo").toString()) : 1;
-            int pageSize = param.containsKey("pageSize") ? Integer.parseInt(param.get("pageSize").toString()) : 10;
+            int pageNo = (param != null && param.containsKey("pageNo")) ? Integer.parseInt(param.get("pageNo").toString()) : 1;
+            int pageSize = (param != null && param.containsKey("pageSize")) ? Integer.parseInt(param.get("pageSize").toString()) : 10;
             
             // 处理studentId参数（与 createData 相同的逻辑）
             if (param != null && param.containsKey("studentId"))
@@ -185,9 +206,12 @@ public class StudentReportDataService implements IDataSetFactory
             // 查询数据（这里简化处理，实际应该分页查询）
             List<Map<String, Object>> students = getMapper().selectStudentListForReport(param);
             
+            log.info("查询到 {} 条学生记录", students != null ? students.size() : 0);
+            
             if (students != null && !students.isEmpty())
             {
-                // 解密敏感字段
+                // 解密敏感字段（归档/导出时必须解密，无论是否有desensitize参数）
+                log.info("🔓 开始解密敏感字段，共 {} 条记录", students.size());
                 for (Map<String, Object> student : students)
                 {
                     decryptField(student, "student_no");
@@ -195,6 +219,16 @@ public class StudentReportDataService implements IDataSetFactory
                     decryptField(student, "phone");
                     decryptField(student, "home_address");
                     decryptField(student, "domicile");
+                    
+                    // 根据参数决定是否脱敏
+                    if (needDesensitize)
+                    {
+                        desensitizeField(student, "id_card_no");   // 身份证脱敏
+                        desensitizeField(student, "phone");        // 手机号脱敏
+                        desensitizeField(student, "student_no");   // 学籍号脱敏
+                        desensitizeField(student, "home_address"); // 家庭住址脱敏
+                        log.debug("已对学生 {} 的敏感信息进行脱敏", student.get("name"));
+                    }
                     
                     // 转换字典字段
                     translateDictFields(student);

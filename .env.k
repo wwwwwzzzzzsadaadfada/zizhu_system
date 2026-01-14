@@ -1,0 +1,1 @@
+AES_SECRET_KEY=ruoyi_student_key

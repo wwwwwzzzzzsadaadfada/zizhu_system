@@ -83,10 +83,10 @@ export default {
 
     & .logo-content {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      flex-direction: row; // 改为横向排列
+      align-items: center; // 垂直居中对齐
+      justify-content: center; // 水平居中对齐
+      gap: 12px; // 增加logo和标题之间的间距
       width: 100%;
     }
 
@@ -94,8 +94,8 @@ export default {
       width: 44px;
       height: 44px;
       display: block;
-      margin: 0 auto;
-      flex-shrink: 0;
+      flex-shrink: 0; // 防止logo被压缩
+      object-fit: contain; // 保持图片比例
     }
 
     & .sidebar-title {
@@ -107,9 +107,8 @@ export default {
       font-size: 16px;
       font-family: 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
       color: #2E7D32; // 深绿色
-      white-space: nowrap;
-      width: 100%;
-      text-align: center;
+      white-space: nowrap; // 防止标题换行
+      flex-shrink: 0; // 防止标题被压缩
       overflow: visible;
       text-overflow: clip;
       text-shadow: 0 1px 2px rgba(46, 125, 50, 0.1); // 文字阴影

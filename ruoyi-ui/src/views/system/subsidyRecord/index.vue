@@ -122,7 +122,7 @@
             </el-table-column>
             <el-table-column label="学年学期" width="120" align="center">
               <template slot-scope="scope">
-                <span>{{ formatYearSemester(scope.row.schoolYear, scope.row.semester) }}</span>
+                <span>{{ formatYearSemester(scope.row.schoolYear, scope.row.semester, scope.row.semesterLabel) }}</span>
               </template>
             </el-table-column>
             <el-table-column label="补助类型" prop="subsidyType" width="120" align="center" show-overflow-tooltip />
@@ -233,7 +233,7 @@
             </el-table-column>
             <el-table-column label="学年学期" width="140" align="center">
               <template slot-scope="scope">
-                <span>{{ formatYearSemester(scope.row.schoolYear, scope.row.semester) }}</span>
+                <span>{{ formatYearSemester(scope.row.schoolYear, scope.row.semester, scope.row.semesterLabel) }}</span>
               </template>
             </el-table-column>
             <el-table-column label="补助类型" prop="subsidyType" width="120" align="center" show-overflow-tooltip />
@@ -1015,10 +1015,12 @@ export default {
     },
 
     /** 格式化学年学期 */
-    formatYearSemester(schoolYear, semester) {
+    formatYearSemester(schoolYear, semester, semesterLabel) {
       if (!schoolYear) return '-';
-      const semesterText = semester === '1' ? '上学期' : semester === '2' ? '下学期' : semester || '';
-      return `${schoolYear}${semesterText ? ' ' + semesterText : ''}`;
+      // 如果后端提供了学期标签，则直接使用
+      if (semesterLabel) {
+        return `${schoolYear} ${semesterLabel}`;
+      }
     },
     
   }

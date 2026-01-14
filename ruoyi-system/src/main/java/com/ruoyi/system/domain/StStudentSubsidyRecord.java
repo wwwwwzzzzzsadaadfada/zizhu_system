@@ -114,6 +114,11 @@ public class StStudentSubsidyRecord extends BaseEntity
     private String budgetProjectName;
     private String schoolYear;  // 添加学年
     private String semester;  // 添加学期
+    
+    /** 状态标签（关联查询，不存数据库） */
+    private String approvalStatusLabel;  // 审批状态标签
+    private String paymentStatusLabel;  // 发放状态标签
+    private String semesterLabel;  // 学期标签
 
     public void setId(Long id) 
     {
@@ -417,6 +422,30 @@ public class StStudentSubsidyRecord extends BaseEntity
         this.schoolingPlanId = schoolingPlanId;
     }
 
+    public String getApprovalStatusLabel() {
+        return approvalStatusLabel;
+    }
+
+    public void setApprovalStatusLabel(String approvalStatusLabel) {
+        this.approvalStatusLabel = approvalStatusLabel;
+    }
+
+    public String getPaymentStatusLabel() {
+        return paymentStatusLabel;
+    }
+
+    public void setPaymentStatusLabel(String paymentStatusLabel) {
+        this.paymentStatusLabel = paymentStatusLabel;
+    }
+
+    public String getSemesterLabel() {
+        return semesterLabel;
+    }
+
+    public void setSemesterLabel(String semesterLabel) {
+        this.semesterLabel = semesterLabel;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -430,6 +459,9 @@ public class StStudentSubsidyRecord extends BaseEntity
             .append("subsidyAmount", getSubsidyAmount())
             .append("approvalStatus", getApprovalStatus())
             .append("paymentStatus", getPaymentStatus())
+            .append("approvalStatusLabel", getApprovalStatusLabel())
+            .append("paymentStatusLabel", getPaymentStatusLabel())
+            .append("semesterLabel", getSemesterLabel())
             .append("paymentDate", getPaymentDate())
             .append("approver", getApprover())
             .append("approvalDate", getApprovalDate())

@@ -17,6 +17,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="subsidyAmount"    column="subsidy_amount"    />
         <result property="approvalStatus"    column="approval_status"    />
         <result property="paymentStatus"    column="payment_status"    />
+        <!-- 状态标签字段映射 -->
+        <result property="approvalStatusLabel"    column="approval_status_label"    />
+        <result property="paymentStatusLabel"    column="payment_status_label"    />
         <result property="paymentDate"    column="payment_date"    />
         <result property="paymentPerson"    column="payment_person"    />
         <result property="approver"    column="approver"    />
@@ -38,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="difficultyLevelId"    column="difficulty_level_id"    />  <!-- 添加困难等级ID映射 -->
         <result property="schoolYear"    column="school_year"    />  <!-- 添加学年 -->
         <result property="semester"    column="semester"    />  <!-- 添加学期 -->
+        <result property="semesterLabel"    column="semester_label"    />  <!-- 添加学期标签 -->
     </resultMap>
 
     <sql id="selectStStudentSubsidyRecordVo">
@@ -50,6 +54,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 WHEN r.approval_status = 1 THEN 1
                 ELSE COALESCE(r.payment_status, 0)
             END as payment_status,
+            -- 添加转换后的状态标签字段
+            CASE
+                WHEN r.approval_status = 0 THEN '待审批'
+                WHEN r.approval_status = 1 THEN '已审批'
+                WHEN r.approval_status = 2 THEN '已驳回'
+                ELSE '未知状态'
+            END as approval_status_label,
+            CASE
+                WHEN r.payment_status = 0 THEN '待发放'
+                WHEN r.payment_status = 1 THEN '已发放'
+                WHEN r.payment_status = 2 THEN '发放失败'
+                ELSE '未知状态'
+            END as payment_status_label,
             r.payment_date, r.payment_person,
             r.approver, r.approval_date, r.approval_memo, r.memo,
             r.created_at, r.updated_at,
@@ -74,7 +91,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             COALESCE(asi.difficulty_type_id, NULL) as difficulty_type_id,
             COALESCE(asi.difficulty_level_id, NULL) as difficulty_level_id,
             COALESCE(ys.school_year, '') as school_year,
-            COALESCE(ys.semester, '') as semester
+            COALESCE(ys.semester, '') as semester,
+            CASE 
+                WHEN ys.semester = 1 THEN '秋季学期'
+                WHEN ys.semester = 2 THEN '春季学期'
+                ELSE '未知学期'
+            END as semester_label
         from st_student_subsidy_records r
         left join st_semester_budget b on r.budget_id = b.id
         left join st_school_year_semester ys on b.year_semester_id = ys.id
@@ -185,7 +207,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             approval_date = NOW(),
             approval_memo = #{arg3}
             <if test="arg1 == 1">
+            ,payment_status = 1
+            ,payment_date = NOW()
+            ,payment_person = #{arg2}
+            </if>
+            <if test="arg1 == 3">
             ,payment_status = 0
+            ,payment_date = NULL
+            ,payment_person = NULL
             </if>
         where id = #{arg0}
     </update>

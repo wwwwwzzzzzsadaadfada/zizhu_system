@@ -113,8 +113,11 @@
               >
                 <i class="el-icon-download" style="color: #606266;"></i> 报表归档
                 <el-dropdown-menu slot="dropdown">
-                  <el-dropdown-item command="single" :disabled="!canPreview">
-                    <i class="el-icon-download"></i> 当前报表
+                  <el-dropdown-item command="singlePdf" :disabled="!canPreview">
+                    <i class="el-icon-download"></i> PDF归档
+                  </el-dropdown-item>
+                  <el-dropdown-item command="singleExcel" :disabled="!canPreview">
+                    <i class="el-icon-document"></i> Excel归档
                   </el-dropdown-item>
                   <el-dropdown-item command="batch" :disabled="!queryForm.reportId">
                     <i class="el-icon-document-copy"></i> 批量归档
@@ -344,6 +347,7 @@
 import { listStudentsBase, getSchoolPlanList } from "@/api/system/studentRecord";
 import { listReport, listReportTree, checkReportType } from "@/api/system/report";
 import { generatePdf, downloadPdf, batchGeneratePdf, listReportPdf, mergePdfs, mergePdfsByCondition, downloadBatchPdf, listReportPdfBatch } from "@/api/system/reportPdf";
+import { generateExcel, downloadExcel } from "@/api/system/reportExcel";
 import iFrame from "@/components/iFrame/index";
 import draggable from 'vuedraggable';
 import { updateReportSort } from '@/api/system/report';
@@ -921,9 +925,12 @@ export default {
 
     /** 处理归档下拉菜单命令 */
     handleArchiveCommand(command) {
-      if (command === 'single') {
-        // 归档当前报表
+      if (command === 'singlePdf') {
+        // 归档当前报表为PDF
         this.generateAndSavePdf()
+      } else if (command === 'singleExcel') {
+        // 归档当前报表为Excel
+        this.generateAndSaveExcel()
       } else if (command === 'batch') {
         // 批量归档
         this.openBatchDialog()
@@ -1198,6 +1205,76 @@ export default {
       } catch (error) {
         console.error('生成PDF失败:', error)
         this.$modal.msgError('PDF生成失败：' + (error.message || '网络错误'))
+      } finally {
+        this.pdfGenerating = false
+      }
+    },
+
+    /** 生成并保存Excel */
+    async generateAndSaveExcel() {
+      if (!this.canPreview) {
+        if (this.currentReportInfo && this.currentReportInfo.needStudent === false) {
+          this.$modal.msgWarning('请选择报表')
+        } else {
+          this.$modal.msgWarning('请选择学生和报表')
+        }
+        return
+      }
+
+      this.pdfGenerating = true // 复用PDF生成状态
+      try {
+        // 获取当前学年学期ID（可以从系统配置或学生信息中获取）
+        const yearSemesterId = this.currentYearSemesterId || null
+
+        // 根据报表类型构建请求参数
+        const params = {
+          reportId: this.queryForm.reportId,
+          yearSemesterId: yearSemesterId
+        }
+
+        // 只在学生报表时传递 studentId
+        if (this.currentReportInfo && this.currentReportInfo.needStudent !== false) {
+          params.studentId = this.queryForm.studentId
+        } else {
+          // 统计报表不需要传递studentId
+          params.studentId = null
+        }
+
+        // 调用后端API生成Excel并保存
+        const response = await generateExcel(params)
+
+        if (response.code === 200) {
+          this.$modal.msgSuccess('Excel生成并保存成功')
+          // 通知归档页面刷新
+          window.dispatchEvent(new CustomEvent('report-archived'))
+          // 可以提示用户下载
+          this.$modal.confirm('Excel已保存到服务器，是否立即下载？', '提示', {
+            confirmButtonText: '下载',
+            cancelButtonText: '取消',
+            type: 'success'
+          }).then(() => {
+            // 使用下载API下载Excel
+            downloadExcel(response.data.id).then(res => {
+              const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+              const link = document.createElement('a')
+              link.href = window.URL.createObjectURL(blob)
+              link.download = response.data.fileName
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              window.URL.revokeObjectURL(link.href)
+              this.$modal.msgSuccess('下载成功')
+            }).catch(err => {
+              console.error('下载失败:', err)
+              this.$modal.msgError('下载失败：' + (err.message || '网络错误'))
+            })
+          }).catch(() => {})
+        } else {
+          this.$modal.msgError(response.msg || 'Excel生成失败')
+        }
+      } catch (error) {
+        console.error('生成Excel失败:', error)
+        this.$modal.msgError('Excel生成失败：' + (error.message || '网络错误'))
       } finally {
         this.pdfGenerating = false
       }

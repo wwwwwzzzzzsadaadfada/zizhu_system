@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.SemesterUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.StStudentSubsidyRecord;
 import com.ruoyi.system.domain.StStudentsBase;
@@ -70,7 +71,21 @@ public class StStudentSubsidyRecordServiceImpl implements IStStudentSubsidyRecor
     @Override
     public StStudentSubsidyRecord selectStStudentSubsidyRecordById(Long id)
     {
-        return stStudentSubsidyRecordMapper.selectStStudentSubsidyRecordById(id);
+        StStudentSubsidyRecord record = stStudentSubsidyRecordMapper.selectStStudentSubsidyRecordById(id);
+        
+        // 使用学期工具类转换学期标签
+        if (record != null && record.getSemester() != null) {
+            try {
+                Integer semesterInt = Integer.valueOf(record.getSemester());
+                String semesterLabel = SemesterUtils.getSemesterLabel(semesterInt);
+                record.setSemesterLabel(semesterLabel);
+            } catch (NumberFormatException e) {
+                // 如果无法转换为整数，保持原值或设置为null
+                record.setSemesterLabel(record.getSemester());
+            }
+        }
+        
+        return record;
     }
 
     /**
@@ -82,7 +97,23 @@ public class StStudentSubsidyRecordServiceImpl implements IStStudentSubsidyRecor
     @Override
     public List<StStudentSubsidyRecord> selectStStudentSubsidyRecordList(StStudentSubsidyRecord stStudentSubsidyRecord)
     {
-        return stStudentSubsidyRecordMapper.selectStStudentSubsidyRecordList(stStudentSubsidyRecord);
+        List<StStudentSubsidyRecord> list = stStudentSubsidyRecordMapper.selectStStudentSubsidyRecordList(stStudentSubsidyRecord);
+        
+        // 使用学期工具类转换学期标签
+        for (StStudentSubsidyRecord record : list) {
+            if (record.getSemester() != null) {
+                try {
+                    Integer semesterInt = Integer.valueOf(record.getSemester());
+                    String semesterLabel = SemesterUtils.getSemesterLabel(semesterInt);
+                    record.setSemesterLabel(semesterLabel);
+                } catch (NumberFormatException e) {
+                    // 如果无法转换为整数，保持原值或设置为null
+                    record.setSemesterLabel(record.getSemester());
+                }
+            }
+        }
+        
+        return list;
     }
 
     /**

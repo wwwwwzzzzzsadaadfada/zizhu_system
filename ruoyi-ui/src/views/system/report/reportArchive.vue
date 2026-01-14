@@ -285,9 +285,9 @@
           <el-table-column label="学生/报表" prop="studentName" width="120" show-overflow-tooltip align="center">
             <template slot-scope="scope">{{ displayText(scope.row.studentName) }}</template>
           </el-table-column>
-          <el-table-column label="学号" prop="studentNo" width="140" show-overflow-tooltip align="center">
+          <!-- <el-table-column label="学号" prop="studentNo" width="140" show-overflow-tooltip align="center">
             <template slot-scope="scope">{{ displayText(scope.row.studentNo) }}</template>
-          </el-table-column>
+          </el-table-column> -->
           <el-table-column label="年级" prop="gradeName" width="100" show-overflow-tooltip align="center">
             <template slot-scope="scope">{{ displayText(scope.row.gradeName) }}</template>
           </el-table-column>

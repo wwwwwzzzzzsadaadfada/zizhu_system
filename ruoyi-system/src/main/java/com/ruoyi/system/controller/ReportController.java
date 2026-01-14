@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.system.service.IStStudentsBaseService;
 import com.ruoyi.system.service.IBaseConfigService;
 import com.ruoyi.system.domain.StStudentsBase;
@@ -34,6 +36,19 @@ public class ReportController extends BaseController
 
     @Autowired
     private IBaseConfigService baseConfigService;
+
+    @Autowired
+    private RedisCache redisCache;
+
+    /**
+     * 助学金申请表缓存Key
+     */
+    private static final String SUBSIDY_REPORT_CACHE_KEY = "report:subsidy:1166714166859173888";
+    
+    /**
+     * 缓存过期时间（24小时）
+     */
+    private static final long CACHE_EXPIRE_HOURS = 24;
 
     /**
      * 查询报表列表
@@ -379,6 +394,105 @@ public class ReportController extends BaseController
         {
             logger.error("检查报表类型失败", e);
             return error("检查报表类型失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取助学金申请表URL
+     * 使用固定的报表ID，通过Redis缓存优化查询性能
+     * 
+     * @param studentId 学生ID（必填）
+     * @return 返回报表URL和相关信息
+     */
+    @GetMapping("/getSubsidyReportUrl")
+    public AjaxResult getSubsidyReportUrl(@RequestParam(required = true) Long studentId)
+    {
+        try
+        {
+            if (studentId == null)
+            {
+                return error("学生ID不能为空");
+            }
+
+            // 验证学生是否存在
+            StStudentsBase student = stStudentsBaseService.selectStStudentsBaseById(studentId);
+            if (student == null)
+            {
+                return error("学生不存在");
+            }
+
+            // 固定的助学金申请表ID
+            String reportId = "1166714166859173888";
+            String reportName = null;
+
+            // 先从Redis缓存获取报表信息
+            try
+            {
+                Map<String, Object> cachedReport = redisCache.getCacheObject(SUBSIDY_REPORT_CACHE_KEY);
+                if (cachedReport != null)
+                {
+                    reportName = cachedReport.get("name") != null ? 
+                        cachedReport.get("name").toString() : "助学金申请表";
+                    logger.debug("从缓存获取助学金申请表信息：报表ID={}, 报表名称={}", reportId, reportName);
+                }
+            }
+            catch (Exception e)
+            {
+                // Redis异常不影响主流程，记录日志后继续查询数据库
+                logger.warn("从Redis缓存获取报表信息失败，将查询数据库：{}", e.getMessage());
+            }
+
+            // 如果缓存未命中，查询数据库
+            if (reportName == null)
+            {
+                String sql = "SELECT id, name, code FROM jimu_report WHERE id = ? AND status = '1'";
+                List<Map<String, Object>> reports = jdbcTemplate.queryForList(sql, reportId);
+
+                if (reports == null || reports.isEmpty())
+                {
+                    return error("助学金申请表不存在或已禁用，请联系管理员");
+                }
+
+                Map<String, Object> report = reports.get(0);
+                reportName = report.get("name") != null ? report.get("name").toString() : "助学金申请表";
+
+                // 将查询结果存入Redis缓存（24小时过期）
+                try
+                {
+                    Map<String, Object> cacheData = new HashMap<>();
+                    cacheData.put("id", reportId);
+                    cacheData.put("name", reportName);
+                    cacheData.put("code", report.get("code"));
+                    redisCache.setCacheObject(SUBSIDY_REPORT_CACHE_KEY, cacheData, 
+                        (int) CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+                    logger.info("助学金申请表信息已存入缓存：报表ID={}, 报表名称={}, 过期时间={}小时", 
+                        reportId, reportName, CACHE_EXPIRE_HOURS);
+                }
+                catch (Exception e)
+                {
+                    // Redis写入失败不影响主流程，只记录警告日志
+                    logger.warn("写入Redis缓存失败，但不影响查询结果：{}", e.getMessage());
+                }
+            }
+
+            // 构建报表URL（返回相对路径，前端会根据环境自动处理baseUrl）
+            String reportUrl = "/jmreport/view/" + reportId + "?studentId=" + studentId + "&desensitize=true";
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("reportId", reportId);
+            result.put("reportName", reportName);
+            result.put("reportUrl", reportUrl);
+            result.put("studentId", studentId);
+
+            logger.info("成功获取助学金申请表URL：学生ID={}, 报表ID={}, 报表名称={}", 
+                studentId, reportId, reportName);
+
+            return success(result);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取助学金申请表URL失败，学生ID：{}", studentId, e);
+            return error("获取助学金申请表URL失败：" + e.getMessage());
         }
     }
 

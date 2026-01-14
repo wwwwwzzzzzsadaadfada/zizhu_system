@@ -3,9 +3,8 @@
     <!-- 顶部标题栏 -->
     <div class="dashboard-header">
       <div class="header-left">
-        <span class="header-icon">≋</span>
+        <img src="@/assets/logo/logo.png" alt="Logo" class="header-logo" />
         <h1 class="dashboard-title">学生资助数据中心</h1>
-        <span class="header-icon">⋰⋱⋰</span>
       </div>
       <div class="header-center">
         <!-- 学段切换器 -->
@@ -1002,13 +1001,13 @@ export default {
     .header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
 
-      .header-icon {
-        color: #66BB6A; // 绿色图标
-        font-size: 28px;
-        font-weight: bold;
-        text-shadow: 0 2px 4px rgba(102, 187, 106, 0.3);
+      .header-logo {
+        height: 50px; // logo高度
+        width: auto; // 宽度自适应
+        object-fit: contain; // 保持图片比例
+        flex-shrink: 0; // 防止logo被压缩
       }
 
       .dashboard-title {
@@ -1018,6 +1017,7 @@ export default {
         color: #2E7D32; // 深绿色
         letter-spacing: 3px;
         text-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+        white-space: nowrap; // 防止标题换行
       }
     }
     

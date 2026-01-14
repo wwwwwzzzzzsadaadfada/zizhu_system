@@ -29,6 +29,14 @@ public interface IStStudentsService
     public List<StStudents> selectStStudentsList(StStudents stStudents);
 
     /**
+     * 查询困难学生基础信息列表（用于导出，返回明文敏感数据）
+     * 
+     * @param stStudents 困难学生基础信息
+     * @return 困难学生基础信息集合
+     */
+    public List<StStudents> selectStStudentsListForExport(StStudents stStudents);
+
+    /**
      * 新增困难学生基础信息
      * 
      * @param stStudents 困难学生基础信息
@@ -84,6 +92,13 @@ public interface IStStudentsService
     public List<Map<String, Object>> selectClassListByGradeId(String gradeId);
 
     /**
+     * 构建学制-年级-班级的树状结构（用于前端级联选择器）
+     * 
+     * @return 学制-年级-班级树状结构
+     */
+    public List<Map<String, Object>> buildSchoolPlanGradeClassTree();
+
+    /**
      * 批量更新困难类型和等级
      * 
      * @param ids 学生ID数组
@@ -94,4 +109,14 @@ public interface IStStudentsService
      * @return 结果
      */
     public int batchUpdateDifficultyInfo(String[] ids, String difficultyTypeId, String difficultyLevelId, String isPovertyReliefFamily, Integer povertyReliefYear);
+
+    /**
+     * 导入学生数据
+     * 
+     * @param studentsList 学生数据列表
+     * @param isUpdateSupport 是否更新支持，如果已存在，则进行更新数据
+     * @param operName 操作用户
+     * @return 结果
+     */
+    public String importStudents(List<StStudents> studentsList, Boolean isUpdateSupport, String operName);
 }

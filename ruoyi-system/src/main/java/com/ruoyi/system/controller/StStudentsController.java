@@ -21,9 +21,11 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.StStudents;
 import com.ruoyi.system.domain.dto.BatchDifficultyRequest;
+import java.io.IOException;
 import com.ruoyi.system.service.IStStudentsService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 困难学生基础信息Controller
@@ -59,11 +61,11 @@ public class StStudentsController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, StStudents stStudents)
     {
-        List<StStudents> list = stStudentsService.selectStStudentsList(stStudents);
+        List<StStudents> list = stStudentsService.selectStStudentsListForExport(stStudents);
         ExcelUtil<StStudents> util = new ExcelUtil<StStudents>(StStudents.class);
         util.exportExcel(response, list, "困难学生基础信息数据");
     }
-
+    
     /**
      * 获取困难学生基础信息详细信息
      */
@@ -182,6 +184,46 @@ public class StStudentsController extends BaseController
     }
 
     /**
+     * 获取学制-年级-班级的树状结构（用于前端级联选择器）
+     * 
+     * 返回格式：
+     * [
+     *   {
+     *     "value": 学制ID,
+     *     "label": "学制名称",
+     *     "children": [
+     *       {
+     *         "value": 年级ID,
+     *         "label": "年级名称",
+     *         "children": [
+     *           {
+     *             "value": 班级ID,
+     *             "label": "班级名称"
+     *           }
+     *         ]
+     *       }
+     *     ]
+     *   }
+     * ]
+     * 
+     * @return 学制-年级-班级树状结构
+     */
+    @GetMapping("/schoolPlanGradeClassTree")
+    public AjaxResult getSchoolPlanGradeClassTree()
+    {
+        try
+        {
+            List<Map<String, Object>> tree = stStudentsService.buildSchoolPlanGradeClassTree();
+            return success(tree);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取学制-年级-班级树状结构失败", e);
+            return error("获取学制-年级-班级树状结构失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 批量更新困难类型和等级
      */
     @PreAuthorize("@ss.hasPermi('system:students:edit')")
@@ -211,5 +253,77 @@ public class StStudentsController extends BaseController
         );
         
         return toAjax(rows);
+    }
+
+    /**
+     * 导入学生数据
+     */
+    @PreAuthorize("@ss.hasPermi('system:students:import')")
+    @Log(title = "困难学生基础信息", businessType = BusinessType.IMPORT)
+    @PostMapping("/import")
+    public AjaxResult importStudents(MultipartFile file, Boolean isUpdateSupport) {
+        // ======== 第一步：文件基本验证 ========
+        if (file == null || file.isEmpty()) {
+            return error("请选择要上传的文件！");
+        }
+        
+        // ======== 第二步：文件类型验证 ========
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            return error("文件名不能为空！");
+        }
+        
+        String fileName = originalFilename.toLowerCase();
+        boolean isValidFileType = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+        if (!isValidFileType) {
+            return error("文件格式不正确，请选择 Excel 文件（.xlsx 或 .xls）");
+        }
+        
+        // ======== 第三步：文件大小验证 ========
+        long maxFileSize = 10 * 1024 * 1024; // 10MB
+        long fileSize = file.getSize();
+        if (fileSize > maxFileSize) {
+            double fileSizeMB = fileSize / 1024.0 / 1024.0;
+            return error(String.format("文件大小不能超过 10MB，当前文件大小：%.2f MB", fileSizeMB));
+        }
+        
+        // ======== 第四步：文件名安全性验证 ========
+        if (originalFilename.contains("..") || originalFilename.contains("/") || originalFilename.contains("\\")) {
+            return error("文件名不合法，包含非法字符");
+        }
+        
+        // ======== 第五步：执行导入 ========
+        try {
+            // 读取Excel文件并转换为学生列表
+            ExcelUtil<StStudents> util = new ExcelUtil<>(StStudents.class);
+            List<StStudents> studentsList = util.importExcel(file.getInputStream());
+            
+            if (studentsList == null || studentsList.isEmpty()) {
+                return error("导入文件为空，请检查文件内容");
+            }
+            
+            String operName = getUsername();
+            String message = stStudentsService.importStudents(studentsList, isUpdateSupport, operName);
+            return success(message);
+        } catch (Exception e) {
+            logger.error("导入学生数据失败", e);
+            String msg = "导入失败！" + e.getMessage();
+            return error(msg);
+        }
+    }
+    
+    /**
+     * 下载导入模板
+     */
+    @PreAuthorize("@ss.hasPermi('system:students:import')")
+    @Log(title = "困难学生基础信息", businessType = BusinessType.EXPORT)
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) throws IOException {
+        try {
+            ExcelUtil<StStudents> util = new ExcelUtil<>(StStudents.class);
+            util.importTemplateExcel(response, "学生数据");
+        } catch (Exception e) {
+            logger.error("导出模板异常:", e);
+        }
     }
 }

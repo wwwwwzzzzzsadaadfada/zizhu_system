@@ -114,6 +114,21 @@
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-dropdown @command="handleCommand" v-hasPermi="['system:students:import']">
+          <el-button
+            type="success"
+            plain
+            icon="el-icon-upload2"
+            size="mini">
+            导入 <i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="import" icon="el-icon-upload2">导入数据</el-dropdown-item>
+            <el-dropdown-item command="template" icon="el-icon-download">下载模板</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           type="warning"
           plain
@@ -245,10 +260,10 @@
     </div>
 
     <!-- 批量认定困难类型对话框 -->
-    <el-dialog 
-      :visible.sync="batchDifficultyOpen" 
-      width="1000px" 
-      append-to-body 
+    <el-dialog
+      :visible.sync="batchDifficultyOpen"
+      width="1000px"
+      append-to-body
       @open="loadUnrecognizedStudents"
       :close-on-click-modal="false"
     >
@@ -263,14 +278,14 @@
             <i class="" style="color: #409EFF; margin-right: 4px;"></i>
             只能认定还没有认定困难类型的学生，请从左侧列表中选择需要认定的学生。
           </div>
-          <i 
-            slot="reference" 
-            class="el-icon-info" 
+          <i
+            slot="reference"
+            class="el-icon-info"
             style="margin-left: 8px; font-size: 16px; color: #409EFF; cursor: pointer;"
           ></i>
         </el-popover>
       </div>
-      
+
       <!-- 对话框主体内容 -->
       <div>
         <el-row :gutter="20">
@@ -311,7 +326,7 @@
               </template>
             </el-transfer>
           </div>
-          
+
           <div style="margin-top: 12px; color: #909399; font-size: 13px; text-align: center;">
             <i class="el-icon-info"></i>
             已选择 <span style="color: #409EFF; font-weight: 500;">{{ transferValue.length }}</span> 名学生
@@ -324,7 +339,7 @@
             <div style="font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #409EFF;">
               <i class="el-icon-edit-outline"></i> 认定信息
             </div>
-            
+
             <el-form ref="batchDifficultyForm" :model="batchDifficultyForm" label-width="90px" label-position="left" size="small">
               <el-form-item label="困难类型" prop="difficultyTypeId" :rules="[{ required: true, message: '请选择困难类型', trigger: 'change' }]">
                 <el-select v-model="batchDifficultyForm.difficultyTypeId" placeholder="请选择" style="width: 100%" @change="handleBatchDifficultyTypeChange">
@@ -336,7 +351,7 @@
                   />
                 </el-select>
               </el-form-item>
-              
+
               <el-form-item label="困难等级" prop="difficultyLevelId" :rules="[{ required: true, message: '请选择困难等级', trigger: 'change' }]">
                 <el-select v-model="batchDifficultyForm.difficultyLevelId" placeholder="请选择" style="width: 100%">
                   <el-option
@@ -347,7 +362,7 @@
                   />
                 </el-select>
               </el-form-item>
-              
+
               <el-form-item label="是否脱贫户" prop="isPovertyReliefFamily" v-if="batchDifficultyForm.isPovertyReliefFamily">
                 <el-radio-group v-model="batchDifficultyForm.isPovertyReliefFamily" disabled size="small">
                   <el-radio label="1">是</el-radio>
@@ -357,7 +372,7 @@
                   <i class="el-icon-info"></i> 根据困难类型自动设置
                 </div>
               </el-form-item>
-              
+
               <el-form-item label="脱贫年份" prop="povertyReliefYear" v-if="batchDifficultyForm.isPovertyReliefFamily === '1'" :rules="[{ required: true, message: '请选择脱贫年份', trigger: 'change' }]">
                 <el-date-picker
                   v-model="batchDifficultyForm.povertyReliefYear"
@@ -372,7 +387,7 @@
         </el-col>
       </el-row>
       </div>
-      
+
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancelBatchDifficulty" size="medium">取 消</el-button>
         <el-button type="primary" @click="submitBatchDifficulty" :disabled="transferValue.length === 0" size="medium">
@@ -386,14 +401,15 @@
 <script>
 import {
   listStudents, getStudents, delStudents, addStudents, updateStudents,
-  getSchoolPlanList, getGradeList, getClassList, batchUpdateDifficulty
+  getSchoolPlanList, getGradeList, getClassList, batchUpdateDifficulty,
+  importStudents
 } from "@/api/system/students";
 import {
   listStudentRecords, getStudentRecord, delStudentRecords, addStudentRecord, updateStudentRecord,
   listStudentsBase, getStudentsBase, addStudentsBase, updateStudentsBase
 } from "@/api/system/studentRecord";
 import { listYearSemesters } from "@/api/system/baseconfig";
-import guangxiRegions from "@/assets/data/guangxi-region.js";
+import { getRegionTree } from "@/api/system/region";
 import iFrame from "@/components/iFrame/index";
 
 export default {
@@ -434,8 +450,8 @@ export default {
       allGradeOptions: [],
       // 班级选项
       classOptions: [],
-      // 广西行政区划数据
-      guangxiRegions: guangxiRegions,
+      // 广西行政区划数据（从后端获取）
+      guangxiRegions: [],
       // 是否正在编辑地址
       isEditingAddress: false,
       // 是否显示脱贫年份字段
@@ -597,7 +613,8 @@ export default {
     if (this.$route.query.refresh) {
       console.log('[Students List] 检测到刷新标记，将刷新列表');
     }
-    
+
+    this.loadRegionData(); // 加载地区数据
     this.getList();
     this.getYearSemesterList();
     this.getSchoolPlanList();
@@ -688,6 +705,21 @@ export default {
       } else {
         callback();
       }
+    },
+    /** 加载地区数据（从后端获取） */
+    loadRegionData() {
+      getRegionTree().then(response => {
+        if (response.code === 200 && response.data) {
+          this.guangxiRegions = response.data;
+          console.log('[Students Index] 地区数据加载成功，共', response.data.length, '个顶级节点');
+        } else {
+          console.error('[Students Index] 地区数据加载失败:', response.msg);
+          this.$modal.msgError('加载地区数据失败：' + (response.msg || '未知错误'));
+        }
+      }).catch(error => {
+        console.error('[Students Index] 地区数据加载异常:', error);
+        this.$modal.msgError('加载地区数据异常');
+      });
     },
     /** 查询困难学生基础信息列表 */
     getList() {
@@ -850,7 +882,7 @@ export default {
     openStudentDetail(row) {
       this.$router.push({
         path: '/system/students-form/index',
-        query: { 
+        query: {
           id: row.id,
           mode: 'view'  // 添加 mode 参数标识为详情查看模式
         }
@@ -1166,13 +1198,13 @@ export default {
     loadUnrecognizedStudents() {
       this.transferLoading = true;
       // 调用后端接口获取未认定学生列表
-      listStudents({ 
+      listStudents({
         unrecognized: true,  // 标记只查询未认定的学生
         pageNum: 1,
         pageSize: 10000 // 获取所有
       }).then(response => {
         let students = response.rows || [];
-        
+
         // 前端过滤：根据学段和姓名筛选
         if (this.transferFilter.schoolStage.length > 0) {
           students = students.filter(student => {
@@ -1180,14 +1212,14 @@ export default {
             return this.transferFilter.schoolStage.includes(stage);
           });
         }
-        
+
         if (this.transferFilter.name) {
           const searchName = this.transferFilter.name.toLowerCase();
           students = students.filter(student => {
             return student.name && student.name.toLowerCase().includes(searchName);
           });
         }
-        
+
         this.transferData = students.map(student => ({
           id: student.id,
           label: student.name,
@@ -1209,7 +1241,7 @@ export default {
         if (name.includes('初中')) return 'junior';
         if (name.includes('高中')) return 'senior';
       }
-      
+
       // 降级到根据学制年限判断
       if (schoolingYears) {
         const years = parseInt(schoolingYears);
@@ -1217,7 +1249,7 @@ export default {
         if (years === 3) return 'junior';    // 初中通常3年
         if (years === 4) return 'senior';    // 高中通常3-4年
       }
-      
+
       return 'unknown';
     },
     /** 处理穿梭框筛选 */
@@ -1232,19 +1264,19 @@ export default {
         this.batchDifficultyForm.isPovertyReliefFamily = null;
         return;
       }
-      
+
       // 前端只用于显示预览，根据字典标签判断
       const difficultyType = this.dict.type.sys_difficulty_type.find(dict => dict.value === value);
       if (!difficultyType) {
         this.batchDifficultyForm.isPovertyReliefFamily = null;
         return;
       }
-      
+
       const label = difficultyType.label || '';
       const isPovertyReliefType = label.includes('脱贫');
       // 仅用于UI显示，实际值由后端计算
       this.batchDifficultyForm.isPovertyReliefFamily = isPovertyReliefType ? '1' : '0';
-      
+
       // 如果不是脱贫户，清空脱贫年份
       if (!isPovertyReliefType) {
         this.batchDifficultyForm.povertyReliefYear = null;
@@ -1391,6 +1423,122 @@ export default {
       //   studentId: this.form.id,
       //   format: 'pdf'
       // }, `助学金申请表_${this.form.name}_${new Date().getTime()}.pdf`)
+    },
+    /** 导入按钮下拉菜单操作 */
+    handleCommand(command) {
+      switch (command) {
+        case 'import':
+          this.handleImportData();
+          break;
+        case 'template':
+          this.downloadTemplate();
+          break;
+        default:
+          break;
+      }
+    },
+    /** 导入数据 */
+    handleImportData() {
+      // 先让用户选择导入模式
+      this.$confirm('请选择导入模式：\n\n• 更新已存在：如果学生已存在，将更新其信息\n• 跳过已存在：如果学生已存在，将跳过该条数据', '导入数据', {
+        confirmButtonText: '更新已存在',
+        cancelButtonText: '跳过已存在',
+        distinguishCancelAndClose: true,
+        type: 'info',
+        closeOnClickModal: false
+      }).then(() => {
+        // 用户选择"更新已存在"
+        this.selectAndImportFile(true);
+      }).catch((action) => {
+        if (action === 'cancel') {
+          // 用户选择"跳过已存在"
+          this.selectAndImportFile(false);
+        }
+        // 如果action是'close'，用户点击了关闭按钮，不做任何操作
+      });
+    },
+    /** 选择文件并导入 */
+    selectAndImportFile(isUpdateSupport) {
+      // 创建隐藏的文件输入元素
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.xlsx,.xls'; // 仅用于文件选择器提示，实际验证在后端
+
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 创建FormData对象
+        // 文件类型和大小验证由后端统一处理，前端仅负责文件选择和数据提交
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 执行导入
+        this.doImport(formData, isUpdateSupport);
+      };
+
+      input.click(); // 触发文件选择
+    },
+    /** 执行导入操作 */
+    doImport(formData, isUpdateSupport) {
+      // 显示加载提示
+      const loading = this.$loading({
+        lock: true,
+        text: '正在导入数据，请稍候...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+
+      importStudents(formData, isUpdateSupport).then(response => {
+        loading.close();
+        if (response.code === 200) {
+          // 后端返回的消息包含详细的导入结果
+          const message = response.msg || '导入成功';
+          this.$alert(message, '导入结果', {
+            dangerouslyUseHTMLString: true,
+            type: 'success',
+            showClose: true,
+            confirmButtonText: '确定',
+            customClass: 'import-result-dialog'
+          });
+          this.getList(); // 重新加载数据
+        } else {
+          // 处理错误响应
+          this.handleImportError(response.msg || '导入失败');
+        }
+      }).catch(error => {
+        loading.close();
+        console.error('导入失败:', error);
+        // 从错误对象中提取错误信息
+        let errorMessage = '导入失败，请检查文件格式和数据';
+        if (error.msg) {
+          errorMessage = error.msg;
+        } else if (error.message) {
+          errorMessage = error.message;
+        } else if (error.response && error.response.data && error.response.data.msg) {
+          errorMessage = error.response.data.msg;
+        }
+        this.handleImportError(errorMessage);
+      });
+    },
+    /** 处理导入错误 */
+    handleImportError(errorMessage) {
+      // 如果错误信息包含HTML标签，使用alert显示（后端返回的错误信息通常包含<br/>）
+      if (errorMessage && (errorMessage.includes('<br/>') || errorMessage.includes('<br>'))) {
+        this.$alert(errorMessage, '导入失败', {
+          dangerouslyUseHTMLString: true,
+          type: 'error',
+          showClose: true,
+          confirmButtonText: '确定',
+          customClass: 'import-result-dialog'
+        });
+      } else {
+        this.$modal.msgError(errorMessage || '导入失败');
+      }
+    },
+    /** 下载导入模板 */
+    downloadTemplate() {
+      this.download('/system/students/importTemplate', {}, `学生导入模板.xlsx`);
     }
   }
 }
@@ -1745,7 +1893,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
   &::before {
     content: '';
     display: inline-block;
@@ -1754,7 +1902,7 @@ export default {
     background: linear-gradient(180deg, #409EFF 0%, #66B1FF 100%);
     border-radius: 2px;
   }
-  
+
   &::after {
     content: '';
     flex: 1;
@@ -1768,7 +1916,7 @@ export default {
 .form-layout {
   ::v-deep .el-form-item {
     margin-bottom: 16px;
-    
+
     .el-form-item__label {
       padding: 0 8px 0 0;
       font-weight: 500;
@@ -1777,12 +1925,12 @@ export default {
       line-height: 32px;
       white-space: nowrap;
     }
-    
+
     .el-form-item__content {
       line-height: 32px;
     }
   }
-  
+
   .el-row {
     margin-bottom: 8px;
   }
@@ -1794,7 +1942,7 @@ export default {
     background: transparent;
     border: none;
   }
-  
+
   ::v-deep .el-tabs__item {
     padding: 0 12px !important;
     height: 40px;
@@ -1804,13 +1952,13 @@ export default {
     border-radius: 4px 4px 0 0;
     background: #f5f7fa;
     font-size: 13px;
-    
+
     &:hover {
       color: #409EFF;
       background: #f0f5ff;
     }
   }
-  
+
   ::v-deep .is-active {
     background: #fff !important;
     border-color: #409EFF !important;
@@ -1830,12 +1978,12 @@ export default {
 ::v-deep .el-drawer {
   display: flex;
   flex-direction: column;
-  
+
   .el-drawer__header {
     padding: 16px 24px;
     border-bottom: 1px solid #f0f0f0;
   }
-  
+
   .el-drawer__body {
     flex: 1;
     display: flex;
@@ -1843,43 +1991,83 @@ export default {
     padding: 0;
     overflow: hidden;
   }
-  
+
   .el-alert {
     margin-bottom: 16px;
     margin: 0;
   }
-  
+
   .section-nav {
     padding: 12px 24px 0 24px;
     background: #fff;
     border-bottom: 1px solid #f0f0f0;
     flex-shrink: 0;
   }
-  
+
   .form-scroll {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 16px 24px;
     max-height: none;
-    
+
     // 自定义滑块
     &::-webkit-scrollbar {
       width: 6px;
     }
-    
+
     &::-webkit-scrollbar-track {
       background: transparent;
     }
-    
+
     &::-webkit-scrollbar-thumb {
       background: #ccc;
       border-radius: 3px;
-      
+
       &:hover {
         background: #999;
       }
     }
+  }
+}
+
+// 导入结果对话框样式优化
+::v-deep .import-result-dialog {
+  .el-message-box__message {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 0;
+    line-height: 1.6;
+    word-break: break-word;
+
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f5f5f5;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c0c4cc;
+      border-radius: 3px;
+
+      &:hover {
+        background: #909399;
+      }
+    }
+  }
+
+  // 成功消息样式
+  &.el-message-box--success .el-message-box__message {
+    color: #67c23a;
+  }
+
+  // 错误消息样式
+  &.el-message-box--error .el-message-box__message {
+    color: #f56c6c;
   }
 }
 </style>

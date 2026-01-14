@@ -3,12 +3,18 @@ package com.ruoyi.system.service.impl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 import com.ruoyi.system.domain.StSchoolYearSemester;
 import com.ruoyi.system.mapper.DashboardMapper;
 import com.ruoyi.system.mapper.StSchoolYearSemesterMapper;
 import com.ruoyi.system.service.IDashboardService;
+import com.ruoyi.common.utils.EncryptionUtil;
 
 /**
  * 控制舱数据Service业务层处理
@@ -19,6 +25,8 @@ import com.ruoyi.system.service.IDashboardService;
 @Service
 public class DashboardServiceImpl implements IDashboardService 
 {
+    private static final Logger log = LoggerFactory.getLogger(DashboardServiceImpl.class);
+
     @Autowired
     private DashboardMapper dashboardMapper;
 
@@ -147,6 +155,7 @@ public class DashboardServiceImpl implements IDashboardService
 
     /**
      * 获取地图数据
+     * 注意：domicile字段是加密的，需要解密后再按县区分组统计
      * 
      * @param segment 学段筛选
      */
@@ -160,7 +169,137 @@ public class DashboardServiceImpl implements IDashboardService
             yearSemesterId = currentSemester.getId();
         }
         
-        return dashboardMapper.getMapData(yearSemesterId, segment);
+        // 查询原始数据（包含加密的domicile字段）
+        List<Map<String, Object>> rawData = dashboardMapper.getMapData(yearSemesterId, segment);
+        
+        // 按县区分组统计（解密domicile后匹配）
+        Map<String, Set<Long>> countyStudentMap = new HashMap<>();
+        
+        for (Map<String, Object> row : rawData)
+        {
+            Object studentIdObj = row.get("studentId");
+            Object domicileObj = row.get("domicile");
+            
+            if (studentIdObj == null || domicileObj == null)
+            {
+                continue;
+            }
+            
+            Long studentId = null;
+            try
+            {
+                if (studentIdObj instanceof Number)
+                {
+                    studentId = ((Number) studentIdObj).longValue();
+                }
+                else if (studentIdObj instanceof String)
+                {
+                    studentId = Long.parseLong(studentIdObj.toString());
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("解析studentId失败: {}", studentIdObj, e);
+                continue;
+            }
+            
+            String domicile = domicileObj.toString();
+            if (StringUtils.isBlank(domicile))
+            {
+                continue;
+            }
+            
+            // 解密domicile字段
+            String decryptedDomicile = null;
+            try
+            {
+                decryptedDomicile = EncryptionUtil.decrypt(domicile);
+            }
+            catch (Exception e)
+            {
+                log.debug("解密domicile失败，可能不是加密数据: {}", e.getMessage());
+                decryptedDomicile = domicile; // 解密失败，使用原值
+            }
+            
+            if (StringUtils.isBlank(decryptedDomicile))
+            {
+                continue;
+            }
+            
+            // 匹配县区
+            String countyName = matchCountyName(decryptedDomicile);
+            if (countyName != null)
+            {
+                countyStudentMap.computeIfAbsent(countyName, k -> new HashSet<>()).add(studentId);
+            }
+        }
+        
+        // 转换为返回格式
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (Map.Entry<String, Set<Long>> entry : countyStudentMap.entrySet())
+        {
+            Map<String, Object> countyData = new HashMap<>();
+            countyData.put("name", entry.getKey());
+            countyData.put("value", entry.getValue().size());
+            result.add(countyData);
+        }
+        
+        // 按value降序排序
+        result.sort((a, b) -> {
+            Integer valueA = (Integer) a.get("value");
+            Integer valueB = (Integer) b.get("value");
+            return valueB.compareTo(valueA);
+        });
+        
+        log.debug("地图数据统计完成，共{}个县区，总学生数: {}", result.size(), 
+                  countyStudentMap.values().stream().mapToInt(Set::size).sum());
+        
+        return result;
+    }
+    
+    /**
+     * 根据户籍地址匹配县区名称
+     * 
+     * @param domicile 户籍地址（已解密）
+     * @return 县区名称，如果无法匹配则返回null
+     */
+    private String matchCountyName(String domicile)
+    {
+        if (StringUtils.isBlank(domicile))
+        {
+            return null;
+        }
+        
+        if (domicile.contains("江州"))
+        {
+            return "江州区";
+        }
+        else if (domicile.contains("扶绥"))
+        {
+            return "扶绥县";
+        }
+        else if (domicile.contains("宁明"))
+        {
+            return "宁明县";
+        }
+        else if (domicile.contains("龙州"))
+        {
+            return "龙州县";
+        }
+        else if (domicile.contains("大新"))
+        {
+            return "大新县";
+        }
+        else if (domicile.contains("天等"))
+        {
+            return "天等县";
+        }
+        else if (domicile.contains("凭祥"))
+        {
+            return "凭祥市";
+        }
+        
+        return null;
     }
 
     /**

@@ -401,97 +401,7 @@
       </div>
     </el-dialog>
 
-    <!-- 学生详情对话框 -->
-    <el-dialog
-      title="学生详情"
-      :visible.sync="studentDetailDialogVisible"
-      width="800px"
-      append-to-body
-      @closed="handleStudentDetailDialogClosed"
-    >
-      <div v-if="selectedStudentDetail" class="student-detail-content">
-        <!-- 学生基本信息 -->
-        <el-card class="detail-card" shadow="never">
-          <div slot="header" class="card-header">
-            <i class="el-icon-user"></i>
-            <span>基本信息</span>
-          </div>
-          <el-descriptions :column="2" border size="small">
-            <el-descriptions-item label="姓名" :span="1">
-              <span class="info-value">{{ selectedStudentDetail.studentName || '-' }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="年级" :span="1">
-              <span class="info-value">{{ selectedStudentDetail.grade || selectedStudentDetail.gradeName || '-' }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="困难类型" :span="2">
-              <el-tag type="warning" size="small" v-if="formatSupportInfo(selectedStudentDetail)">
-                {{ formatSupportInfo(selectedStudentDetail) }}
-              </el-tag>
-              <span v-else class="info-value">未认定</span>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-card>
 
-        <!-- 受助记录 -->
-        <el-card class="detail-card" shadow="never" style="margin-top: 20px;">
-          <div slot="header" class="card-header">
-            <i class="el-icon-document"></i>
-            <span>受助记录（已审核通过）</span>
-          </div>
-          <el-table
-            v-loading="subsidyRecordsLoading"
-            :data="subsidyRecords"
-            border
-            size="small"
-            style="width: 100%"
-          >
-            <el-table-column label="序号" type="index" width="60" align="center" />
-            <el-table-column label="学年/学期" align="center" min-width="160">
-              <template slot-scope="scope">
-                {{ formatAcademicYearAndSemesterForSubsidyRecord(scope.row) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="补助类型" align="center" prop="subsidyType" width="120" />
-            <el-table-column label="补助金额" align="center" width="120">
-              <template slot-scope="scope">
-                ￥{{ formatAmount(scope.row.subsidyAmount) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="经济分类" align="center" width="120">
-              <template slot-scope="scope">
-                {{ getEconomyCategoryLabel(scope.row.economyCategory) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="审批状态" align="center" width="100">
-              <template slot-scope="scope">
-                <span v-if="scope.row.approvalStatus != null">
-                  {{ selectDictLabel(dict.type.sys_approval_status, scope.row.approvalStatus) }}
-                </span>
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="审批时间" align="center" width="180">
-              <template slot-scope="scope">
-                {{ parseTime(scope.row.approvalDate, '{y}-{m}-{d} {h}:{i}:{s}') || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="发放状态" align="center" width="100">
-              <template slot-scope="scope">
-                {{ selectDictLabel(dict.type.sys_payment_status, scope.row.paymentStatus) || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="备注" align="center" prop="memo" show-overflow-tooltip />
-          </el-table>
-          <div v-if="!subsidyRecordsLoading && subsidyRecords.length === 0" class="empty-tip">
-            <i class="el-icon-info"></i>
-            <span>暂无已审核通过的受助记录</span>
-          </div>
-        </el-card>
-      </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="studentDetailDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
 
     <!-- 批量发放对话框 -->
     <el-dialog
@@ -1409,11 +1319,7 @@ export default {
         academicYear: null,
         semester: null
       },
-      // 学生详情对话框
-      studentDetailDialogVisible: false,
-      selectedStudentDetail: null,
-      subsidyRecords: [],
-      subsidyRecordsLoading: false,
+
       // 批量发放相关
       selectedStudents: [],
       batchPaymentDialogVisible: false,
@@ -1528,7 +1434,9 @@ export default {
       const currentBudgets = Array.isArray(this.availableBudgets) ? this.availableBudgets : []
       const historyBudgets = Array.isArray(this.historicalBudgets) ? this.historicalBudgets : []
       return [...currentBudgets, ...historyBudgets]
-    }
+    },
+  },
+  watch: {
   },
   created() {
     this.initializePage();
@@ -2057,11 +1965,18 @@ export default {
           });
       });
     },
-    /** 打开学生详情对话框 */
+    /** 打开学生详情页面 */
     openStudentDetailDialog(row) {
-      this.selectedStudentDetail = { ...row };
-      this.studentDetailDialogVisible = true;
-      this.loadStudentSubsidyRecords(row);
+      // 跳转到学生表单页面，显示学生详情并带有受助记录tab
+      this.$router.push({
+        path: '/system/students-form/index',
+        query: { 
+          id: row.studentId, 
+          mode: 'view', 
+          showSubsidy: 'true',
+          from: 'aidedStudent'
+        }
+      });
     },
     /** 加载学生的受助记录（已审核通过） */
     loadStudentSubsidyRecords(row) {
@@ -2090,11 +2005,7 @@ export default {
           this.subsidyRecordsLoading = false;
         });
     },
-    /** 关闭学生详情对话框 */
-    handleStudentDetailDialogClosed() {
-      this.selectedStudentDetail = null;
-      this.subsidyRecords = [];
-    },
+
 
     /** 表格选择变化 */
     handleSelectionChange(selection) {
@@ -2960,6 +2871,11 @@ export default {
   font-family: 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
 }
 
+/* 整个页面使用思源黑体 */
+* {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', '微软雅黑', sans-serif;
+}
+
 .aided-student-page ::v-deep * {
   font-family: 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
 }
@@ -3279,38 +3195,349 @@ export default {
   padding: 0;
 }
 
-.detail-card {
+.form-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
   border: 1px solid #e4e7ed;
-  border-radius: 4px;
 }
 
-.detail-card .card-header {
-  display: flex;
-  align-items: center;
+.form-card ::v-deep .el-card__header {
+  padding: 12px 20px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.form-card ::v-deep .el-card__body {
+  padding: 20px;
+}
+
+.form-card:last-of-type {
+  margin-bottom: 0;
+}
+
+.section-tabs {
+  margin-bottom: 14px;
+}
+
+.section-tabs ::v-deep .el-tabs__header {
+  border-bottom: 1px solid #e4e7ed;
+  margin: 0 0 4px 0;
+}
+
+.section-tabs ::v-deep .el-tabs__item {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-right: 18px;
+  padding: 10px 6px;
+  background: transparent;
+  color: #606266;
+  font-weight: 500;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.section-tabs ::v-deep .el-tabs__item.is-active {
+  border-bottom-color: #409EFF;
+  color: #409EFF;
   font-weight: 600;
-  font-size: 15px;
-  color: #303133;
 }
 
-.detail-card .card-header i {
-  margin-right: 8px;
-  font-size: 18px;
+.section-tabs ::v-deep .el-tabs__item:hover {
   color: #409EFF;
 }
 
-.detail-card ::v-deep .el-card__body {
+.form-tip {
+  margin-bottom: 15px;
+}
+
+.section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  background: #f5f7fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.section-nav .el-button {
+  color: #1890ff;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.form-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-header i {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #409EFF;
+}
+
+/* 对话框样式优化 */
+::v-deep .el-dialog__body {
+  padding: 20px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+::v-deep .el-dialog__footer {
+  padding: 15px 20px;
+  text-align: right;
+  border-top: 1px solid #e4e7ed;
+}
+
+/* 报表对话框特殊样式 */
+::v-deep .report-dialog .el-dialog__body {
+  max-height: 85vh; /* 报表对话框使用更大的高度，与报表容器高度匹配 */
   padding: 15px;
 }
 
-.detail-card ::v-deep .el-descriptions__label {
-  font-weight: 500;
-  color: #606266;
-  width: 90px;
+::v-deep .report-dialog .el-dialog {
+  margin-top: 3vh !important; /* 减小顶部边距，增大可用空间 */
 }
 
-.detail-card .info-value {
-  color: #303133;
+/* 表单项间距 */
+::v-deep .el-form-item {
+  margin-bottom: 18px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  ::v-deep .el-dialog {
+    width: 95% !important;
+  }
+}
+
+/* 报表预览相关样式 */
+.report-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-preview-container {
+  width: 100%;
+  min-height: 85vh; /* 增加高度到85vh */
+  height: 85vh;
+  position: relative;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  overflow: auto; /* 改为auto，允许横向滚动 */
+  background: #f5f7fa;
+}
+
+.report-preview-container .report-iframe-wrapper {
+  width: 100%;
+  max-width: 100%; /* 限制最大宽度，不超过容器 */
+  height: 100%;
+  min-height: 600px;
+  border: none;
+  background: #fff;
+}
+
+.report-preview-container .report-iframe-wrapper ::v-deep > div {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.report-preview-container .report-iframe-wrapper ::v-deep iframe {
+  width: 100%;
+  max-width: 100%; /* 不再强制最小宽度，让报表自适应 */
+  height: 100%;
+  min-height: 600px;
+}
+
+.report-preview-container .report-error {
+  padding: 20px;
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-preview-container .report-empty {
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .report-preview-container {
+    height: 400px;
+    min-height: 400px;
+  }
+}
+
+.report-preview-container .report-iframe-wrapper ::v-deep iframe {
+  min-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .report-preview-container {
+    height: 400px;
+  }
+}
+
+/* 横线标题样式 */
+.section-title {
+  position: relative;
+  margin: 24px 0 16px 0;
+  padding-bottom: 10px;
   font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, #409EFF 0%, #66B1FF 100%);
+  border-radius: 2px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #D9D9D9 0%, transparent 100%);
+  margin-left: 8px;
+}
+
+/* 表单布局优化 */
+.form-layout ::v-deep .el-form-item {
+  margin-bottom: 16px;
+}
+
+.form-layout ::v-deep .el-form-item .el-form-item__label {
+  padding: 0 8px 0 0;
+  font-weight: 500;
+  font-size: 13px;
+  color: #303133;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.form-layout ::v-deep .el-form-item .el-form-item__content {
+  line-height: 32px;
+}
+
+.form-layout .el-row {
+  margin-bottom: 8px;
+}
+
+/* Tab选项卡样式 */
+.section-tabs ::v-deep .el-tabs__nav {
+  background: transparent;
+  border: none;
+}
+
+.section-tabs ::v-deep .el-tabs__item {
+  padding: 0 12px !important;
+  height: 40px;
+  line-height: 40px;
+  margin: 0 4px 0 0;
+  border: 1px solid #e4e7ed !important;
+  border-radius: 4px 4px 0 0;
+  background: #f5f7fa;
+  font-size: 13px;
+}
+
+.section-tabs ::v-deep .el-tabs__item:hover {
+  color: #409EFF;
+  background: #f0f5ff;
+}
+
+.section-tabs ::v-deep .is-active {
+  background: #fff !important;
+  border-color: #409EFF !important;
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Tab样式优化 */
+::v-deep .el-drawer {
+  display: flex;
+  flex-direction: column;
+}
+
+::v-deep .el-drawer .el-drawer__header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+::v-deep .el-drawer .el-drawer__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+::v-deep .el-drawer .el-alert {
+  margin-bottom: 16px;
+  margin: 0;
+}
+
+::v-deep .el-drawer .section-nav {
+  padding: 12px 24px 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+::v-deep .el-drawer .form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 24px;
+  max-height: none;
+}
+
+/* 自定义滑块 */
+.form-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-scroll::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.form-scroll::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .empty-tip {

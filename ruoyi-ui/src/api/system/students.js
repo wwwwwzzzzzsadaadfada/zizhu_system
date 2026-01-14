@@ -67,11 +67,40 @@ export function getClassList(gradeId) {
   })
 }
 
+// 获取学制-年级-班级的树状结构（用于级联选择器）
+export function getSchoolPlanGradeClassTree() {
+  return request({
+    url: '/system/students/schoolPlanGradeClassTree',
+    method: 'get'
+  })
+}
+
 // 批量更新困难类型和等级
 export function batchUpdateDifficulty(data) {
   return request({
     url: '/system/students/batchUpdateDifficulty',
     method: 'put',
     data: data
+  })
+}
+
+// 导入学生数据
+export function importStudents(data, isUpdateSupport) {
+  return request({
+    url: '/system/students/import',
+    method: 'post',
+    params: { isUpdateSupport: isUpdateSupport },
+    data: data,
+    headers: {
+      'Content-Type': undefined
+    }
+  })
+}
+
+// 下载学生导入模板
+export function importTemplate() {
+  return request({
+    url: '/system/students/importTemplate',
+    method: 'post'
   })
 }

@@ -206,20 +206,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
-    <!-- 获取地图数据(按县区统计,当前学期,所有学段,从受助学生信息表统计,使用关键字匹配) -->
+    <!-- 获取地图数据(按县区统计,当前学期,所有学段,从受助学生信息表统计)
+         注意：domicile字段是加密的，需要在Service层解密后分组统计 -->
     <select id="getMapData" resultType="map">
         SELECT 
-            CASE 
-                WHEN asi.domicile LIKE '%江州%' THEN '江州区'
-                WHEN asi.domicile LIKE '%扶绥%' THEN '扶绥县'
-                WHEN asi.domicile LIKE '%宁明%' THEN '宁明县'
-                WHEN asi.domicile LIKE '%龙州%' THEN '龙州县'
-                WHEN asi.domicile LIKE '%大新%' THEN '大新县'
-                WHEN asi.domicile LIKE '%天等%' THEN '天等县'
-                WHEN asi.domicile LIKE '%凭祥%' THEN '凭祥市'
-                ELSE NULL
-            END AS name,
-            COUNT(DISTINCT asi.student_id) AS value
+            DISTINCT asi.student_id AS studentId,
+            asi.domicile AS domicile
         FROM st_aided_student_info asi
         LEFT JOIN st_students_base sb ON asi.student_id = sb.id
         LEFT JOIN st_schooling_plans sp ON sb.schooling_plan_id = sp.id
@@ -229,34 +221,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         AND asi.domicile IS NOT NULL
         AND asi.domicile != ''
-        AND (
-            asi.domicile LIKE '%江州%' 
-            OR asi.domicile LIKE '%扶绥%' 
-            OR asi.domicile LIKE '%宁明%' 
-            OR asi.domicile LIKE '%龙州%' 
-            OR asi.domicile LIKE '%大新%' 
-            OR asi.domicile LIKE '%天等%' 
-            OR asi.domicile LIKE '%凭祥%'
-        )
         <if test="segment == 'high'">
             AND sp.name LIKE '%高中%'
         </if>
         <if test="segment == 'compulsory'">
             AND (sp.name LIKE '%小学%' OR sp.name LIKE '%初中%')
         </if>
-        GROUP BY 
-            CASE 
-                WHEN asi.domicile LIKE '%江州%' THEN '江州区'
-                WHEN asi.domicile LIKE '%扶绥%' THEN '扶绥县'
-                WHEN asi.domicile LIKE '%宁明%' THEN '宁明县'
-                WHEN asi.domicile LIKE '%龙州%' THEN '龙州县'
-                WHEN asi.domicile LIKE '%大新%' THEN '大新县'
-                WHEN asi.domicile LIKE '%天等%' THEN '天等县'
-                WHEN asi.domicile LIKE '%凭祥%' THEN '凭祥市'
-                ELSE NULL
-            END
-        HAVING name IS NOT NULL
-        ORDER BY value DESC
     </select>
 
     <!-- 获取年级受助金额统计(当前学期,按年级统计,已审核通过,最后一行显示总计) -->

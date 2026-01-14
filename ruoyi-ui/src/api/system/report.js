@@ -43,4 +43,13 @@ export function updateReportSort(data) {
   })
 }
 
+// 获取助学金申请表URL（后端处理所有逻辑）
+export function getSubsidyReportUrl(studentId) {
+  return request({
+    url: '/system/report/getSubsidyReportUrl',
+    method: 'get',
+    params: { studentId }
+  })
+}
+
 
